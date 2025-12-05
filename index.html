@@ -361,6 +361,15 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 24px;
         }
+        
+        .leaflet-container {
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        .custom-marker {
+            background: transparent !important;
+            border: none !important;
+        }
     </style>
 </head>
 <body>
@@ -572,19 +581,43 @@
 
         // Load data on mount
         useEffect(() => {
-            setIsLoading(false);
+            const init = () => {
+                try {
+                    // Check for URL parameters (for sharing)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('template')) {
+                        loadTemplate(urlParams.get('template'));
+                    }
+                    
+                    // Set global functions for map popups
+                    window.editZone = (id) => {
+                        // This will be handled in the MapTool component
+                        console.log('Edit zone:', id);
+                    };
+                    
+                    window.deleteZone = (id) => {
+                        // This will be handled in the MapTool component
+                        console.log('Delete zone:', id);
+                    };
+                    
+                    setIsLoading(false);
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    setIsLoading(false);
+                }
+            };
             
-            // Check for URL parameters (for sharing)
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('template')) {
-                loadTemplate(urlParams.get('template'));
-            }
+            init();
         }, []);
 
         // Save to localStorage whenever formData changes
         useEffect(() => {
             if (!isLoading) {
-                localStorage.setItem('leapFormData', JSON.stringify(formData));
+                try {
+                    localStorage.setItem('leapFormData', JSON.stringify(formData));
+                } catch (error) {
+                    console.error('Error saving to localStorage:', error);
+                }
             }
         }, [formData, isLoading]);
 
@@ -721,204 +754,207 @@
         };
 
         const generateRecommendations = () => {
-            const recs = [];
-            const timeline = [];
-            const budgetItems = [];
-            const now = new Date();
-            
-            // Detailed weed management recommendations
-            if (formData.problems.weeds.length > 0) {
-                const stateWeeds = sampleWeeds[formData.property.state] || [];
-                const detailedWeeds = formData.problems.weeds.map(weedName => {
-                    return stateWeeds.find(w => w.name === weedName) || { name: weedName };
-                });
+            try {
+                const recs = [];
+                const timeline = [];
+                const budgetItems = [];
                 
-                const weedRec = {
-                    title: 'Integrated Weed Management Plan',
-                    category: 'vegetation',
-                    actions: [
-                        'Conduct a detailed weed mapping exercise to identify infestation boundaries',
-                        'Prioritize control based on weed invasiveness and site accessibility',
-                        'Implement a combination of control methods: mechanical, chemical, biological',
-                        'Develop a monitoring schedule to assess control effectiveness',
-                        'Establish competitive ground cover to prevent re-invasion'
-                    ],
-                    priority: 'high',
-                    whyImportant: 'Effective weed management prevents loss of productive land, protects native biodiversity, reduces fire fuel loads, and maintains ecosystem function.',
-                    resources: fundingPrograms[formData.property.state] || [],
-                    estimatedCost: 5000,
-                    timeframe: '6-24 months',
-                    detailedWeeds: detailedWeeds
-                };
-                
-                recs.push(weedRec);
-                
-                budgetItems.push({
-                    item: 'Weed control program',
-                    cost: 5000,
-                    priority: 'high',
-                    timeframe: 'Months 1-6'
-                });
-                
-                timeline.push({
-                    action: 'Initial weed assessment and mapping',
-                    timeframe: '1-2 months',
-                    season: getBestSeason(formData.property.state, 'weeds'),
-                    priority: 'high',
-                    details: 'Map all weed infestations, identify species, and assess densities',
-                    responsible: 'Landholder + NRM officer'
-                });
-            }
-            
-            // Erosion control with engineering solutions
-            if (formData.problems.erosion.present) {
-                const severity = formData.problems.erosion.severity;
-                const erosionRec = {
-                    title: 'Erosion Control and Soil Conservation',
-                    category: 'soil',
-                    actions: severity === 'high' ? [
-                        'Install structural erosion control measures (check dams, silt fences)',
-                        'Construct contour banks in cropping areas',
-                        'Implement grade stabilization structures in drainage lines',
-                        'Revegetate with deep-rooted native grasses and shrubs',
-                        'Establish windbreaks in areas prone to wind erosion'
-                    ] : [
-                        'Implement vegetative buffers along waterways',
-                        'Reduce ground disturbance through rotational grazing',
-                        'Maintain ground cover year-round',
-                        'Use contour planting in sloping areas',
-                        'Monitor erosion hotspots quarterly'
-                    ],
-                    priority: severity === 'high' ? 'high' : 'medium',
-                    whyImportant: 'Soil erosion leads to loss of productive topsoil, reduced water quality, sedimentation of waterways, and decreased land productivity.',
-                    resources: [],
-                    estimatedCost: severity === 'high' ? 15000 : 5000,
-                    timeframe: severity === 'high' ? '3-12 months' : '6-24 months'
-                };
-                
-                recs.push(erosionRec);
-                
-                budgetItems.push({
-                    item: 'Erosion control works',
-                    cost: severity === 'high' ? 15000 : 5000,
-                    priority: severity === 'high' ? 'high' : 'medium',
-                    timeframe: severity === 'high' ? 'Months 1-3' : 'Months 3-12'
-                });
-            }
-            
-            // Habitat restoration with ecological considerations
-            if (formData.problems.habitatLoss.present || formData.problems.goals.includes('Improve biodiversity')) {
-                const habitatRec = {
-                    title: 'Habitat Restoration and Connectivity',
-                    category: 'biodiversity',
-                    actions: [
-                        'Plant locally indigenous vegetation in strategic locations',
-                        'Create wildlife corridors to connect habitat patches',
-                        'Install nest boxes for hollow-dependent species',
-                        'Control feral predators where necessary',
-                        'Monitor wildlife usage with camera traps',
-                        'Consider fencing to protect sensitive regeneration areas'
-                    ],
-                    priority: 'medium',
-                    whyImportant: 'Habitat restoration increases biodiversity, supports ecosystem services (pollination, pest control), enhances landscape resilience, and provides climate adaptation benefits.',
-                    resources: [],
-                    estimatedCost: 10000,
-                    timeframe: '12-36 months'
-                };
-                
-                recs.push(habitatRec);
-                
-                budgetItems.push({
-                    item: 'Habitat restoration planting',
-                    cost: 10000,
-                    priority: 'medium',
-                    timeframe: 'Months 6-18'
-                });
-            }
-            
-            // Water quality management plan
-            if (formData.problems.waterQuality.present || formData.property.features.includes('Creeks or rivers')) {
-                const waterRec = {
-                    title: 'Waterway and Riparian Management',
-                    category: 'water',
-                    actions: [
-                        'Fence waterways to exclude stock (minimum 30m buffer)',
-                        'Revegetate riparian zones with native sedges, rushes and trees',
-                        'Install off-stream watering points for livestock',
-                        'Monitor water quality parameters quarterly',
-                        'Control erosion in catchment areas',
-                        'Manage nutrient runoff from agricultural areas'
-                    ],
-                    priority: 'medium',
-                    whyImportant: 'Healthy waterways provide clean water, support aquatic ecosystems, reduce flood risk, maintain stream stability, and enhance landscape values.',
-                    resources: [],
-                    estimatedCost: 8000,
-                    timeframe: '6-24 months'
-                };
-                
-                recs.push(waterRec);
-            }
-            
-            // Fire management with planning
-            if (formData.problems.fireRisk.present) {
-                const fireRec = {
-                    title: 'Bushfire Risk Management',
-                    category: 'fire',
-                    actions: [
-                        'Create and maintain asset protection zones around buildings',
-                        'Develop a comprehensive fire management plan',
-                        'Implement strategic fuel reduction program',
-                        'Establish and maintain fire access trails',
-                        'Install water supply points for firefighting',
-                        'Participate in local fire planning committees'
-                    ],
-                    priority: 'high',
-                    whyImportant: 'Proactive fire management protects life and property, reduces wildfire intensity, maintains ecosystem health through appropriate fire regimes, and supports community safety.',
-                    resources: [],
-                    estimatedCost: 12000,
-                    timeframe: '3-12 months'
-                };
-                
-                recs.push(fireRec);
-            }
-            
-            // Carbon farming opportunities
-            if (formData.problems.goals.includes('Carbon sequestration')) {
-                const carbonRec = {
-                    title: 'Carbon Farming and Storage',
-                    category: 'climate',
-                    actions: [
-                        'Implement rotational grazing to increase soil carbon',
-                        'Plant permanent native vegetation in marginal areas',
-                        'Reduce tillage intensity in cropping systems',
-                        'Investigate carbon farming methodology eligibility',
-                        'Monitor soil carbon levels over time',
-                        'Explore carbon market opportunities'
-                    ],
-                    priority: 'medium',
-                    whyImportant: 'Increasing carbon sequestration mitigates climate change, improves soil health and fertility, enhances water retention, and can generate additional farm income.',
-                    resources: [],
-                    estimatedCost: 7000,
-                    timeframe: '12-60 months'
-                };
-                
-                recs.push(carbonRec);
-            }
-            
-            // Calculate total budget
-            const totalCost = budgetItems.reduce((sum, item) => sum + item.cost, 0);
-            
-            // Update state with generated data
-            setFormData(prev => ({
-                ...prev,
-                recommendations: recs,
-                timeline: timeline,
-                budget: {
-                    ...prev.budget,
-                    estimatedCost: totalCost,
-                    items: budgetItems
+                // Detailed weed management recommendations
+                if (formData.problems.weeds.length > 0) {
+                    const stateWeeds = sampleWeeds[formData.property.state] || [];
+                    const detailedWeeds = formData.problems.weeds.map(weedName => {
+                        return stateWeeds.find(w => w.name === weedName) || { name: weedName };
+                    });
+                    
+                    const weedRec = {
+                        title: 'Integrated Weed Management Plan',
+                        category: 'vegetation',
+                        actions: [
+                            'Conduct a detailed weed mapping exercise to identify infestation boundaries',
+                            'Prioritize control based on weed invasiveness and site accessibility',
+                            'Implement a combination of control methods: mechanical, chemical, biological',
+                            'Develop a monitoring schedule to assess control effectiveness',
+                            'Establish competitive ground cover to prevent re-invasion'
+                        ],
+                        priority: 'high',
+                        whyImportant: 'Effective weed management prevents loss of productive land, protects native biodiversity, reduces fire fuel loads, and maintains ecosystem function.',
+                        resources: fundingPrograms[formData.property.state] || [],
+                        estimatedCost: 5000,
+                        timeframe: '6-24 months',
+                        detailedWeeds: detailedWeeds
+                    };
+                    
+                    recs.push(weedRec);
+                    
+                    budgetItems.push({
+                        item: 'Weed control program',
+                        cost: 5000,
+                        priority: 'high',
+                        timeframe: 'Months 1-6'
+                    });
+                    
+                    timeline.push({
+                        action: 'Initial weed assessment and mapping',
+                        timeframe: '1-2 months',
+                        season: getBestSeason(formData.property.state, 'weeds'),
+                        priority: 'high',
+                        details: 'Map all weed infestations, identify species, and assess densities',
+                        responsible: 'Landholder + NRM officer'
+                    });
                 }
-            }));
+                
+                // Erosion control with engineering solutions
+                if (formData.problems.erosion.present) {
+                    const severity = formData.problems.erosion.severity;
+                    const erosionRec = {
+                        title: 'Erosion Control and Soil Conservation',
+                        category: 'soil',
+                        actions: severity === 'high' ? [
+                            'Install structural erosion control measures (check dams, silt fences)',
+                            'Construct contour banks in cropping areas',
+                            'Implement grade stabilization structures in drainage lines',
+                            'Revegetate with deep-rooted native grasses and shrubs',
+                            'Establish windbreaks in areas prone to wind erosion'
+                        ] : [
+                            'Implement vegetative buffers along waterways',
+                            'Reduce ground disturbance through rotational grazing',
+                            'Maintain ground cover year-round',
+                            'Use contour planting in sloping areas',
+                            'Monitor erosion hotspots quarterly'
+                        ],
+                        priority: severity === 'high' ? 'high' : 'medium',
+                        whyImportant: 'Soil erosion leads to loss of productive topsoil, reduced water quality, sedimentation of waterways, and decreased land productivity.',
+                        resources: [],
+                        estimatedCost: severity === 'high' ? 15000 : 5000,
+                        timeframe: severity === 'high' ? '3-12 months' : '6-24 months'
+                    };
+                    
+                    recs.push(erosionRec);
+                    
+                    budgetItems.push({
+                        item: 'Erosion control works',
+                        cost: severity === 'high' ? 15000 : 5000,
+                        priority: severity === 'high' ? 'high' : 'medium',
+                        timeframe: severity === 'high' ? 'Months 1-3' : 'Months 3-12'
+                    });
+                }
+                
+                // Habitat restoration with ecological considerations
+                if (formData.problems.habitatLoss.present || formData.problems.goals.includes('Improve biodiversity')) {
+                    const habitatRec = {
+                        title: 'Habitat Restoration and Connectivity',
+                        category: 'biodiversity',
+                        actions: [
+                            'Plant locally indigenous vegetation in strategic locations',
+                            'Create wildlife corridors to connect habitat patches',
+                            'Install nest boxes for hollow-dependent species',
+                            'Control feral predators where necessary',
+                            'Monitor wildlife usage with camera traps',
+                            'Consider fencing to protect sensitive regeneration areas'
+                        ],
+                        priority: 'medium',
+                        whyImportant: 'Habitat restoration increases biodiversity, supports ecosystem services (pollination, pest control), enhances landscape resilience, and provides climate adaptation benefits.',
+                        resources: [],
+                        estimatedCost: 10000,
+                        timeframe: '12-36 months'
+                    };
+                    
+                    recs.push(habitatRec);
+                    
+                    budgetItems.push({
+                        item: 'Habitat restoration planting',
+                        cost: 10000,
+                        priority: 'medium',
+                        timeframe: 'Months 6-18'
+                    });
+                }
+                
+                // Water quality management plan
+                if (formData.problems.waterQuality.present || formData.property.features.includes('Creeks or rivers')) {
+                    const waterRec = {
+                        title: 'Waterway and Riparian Management',
+                        category: 'water',
+                        actions: [
+                            'Fence waterways to exclude stock (minimum 30m buffer)',
+                            'Revegetate riparian zones with native sedges, rushes and trees',
+                            'Install off-stream watering points for livestock',
+                            'Monitor water quality parameters quarterly',
+                            'Control erosion in catchment areas',
+                            'Manage nutrient runoff from agricultural areas'
+                        ],
+                        priority: 'medium',
+                        whyImportant: 'Healthy waterways provide clean water, support aquatic ecosystems, reduce flood risk, maintain stream stability, and enhance landscape values.',
+                        resources: [],
+                        estimatedCost: 8000,
+                        timeframe: '6-24 months'
+                    };
+                    
+                    recs.push(waterRec);
+                }
+                
+                // Fire management with planning
+                if (formData.problems.fireRisk.present) {
+                    const fireRec = {
+                        title: 'Bushfire Risk Management',
+                        category: 'fire',
+                        actions: [
+                            'Create and maintain asset protection zones around buildings',
+                            'Develop a comprehensive fire management plan',
+                            'Implement strategic fuel reduction program',
+                            'Establish and maintain fire access trails',
+                            'Install water supply points for firefighting',
+                            'Participate in local fire planning committees'
+                    ],
+                        priority: 'high',
+                        whyImportant: 'Proactive fire management protects life and property, reduces wildfire intensity, maintains ecosystem health through appropriate fire regimes, and supports community safety.',
+                        resources: [],
+                        estimatedCost: 12000,
+                        timeframe: '3-12 months'
+                    };
+                    
+                    recs.push(fireRec);
+                }
+                
+                // Carbon farming opportunities
+                if (formData.problems.goals.includes('Carbon sequestration')) {
+                    const carbonRec = {
+                        title: 'Carbon Farming and Storage',
+                        category: 'climate',
+                        actions: [
+                            'Implement rotational grazing to increase soil carbon',
+                            'Plant permanent native vegetation in marginal areas',
+                            'Reduce tillage intensity in cropping systems',
+                            'Investigate carbon farming methodology eligibility',
+                            'Monitor soil carbon levels over time',
+                            'Explore carbon market opportunities'
+                        ],
+                        priority: 'medium',
+                        whyImportant: 'Increasing carbon sequestration mitigates climate change, improves soil health and fertility, enhances water retention, and can generate additional farm income.',
+                        resources: [],
+                        estimatedCost: 7000,
+                        timeframe: '12-60 months'
+                    };
+                    
+                    recs.push(carbonRec);
+                }
+                
+                // Calculate total budget
+                const totalCost = budgetItems.reduce((sum, item) => sum + item.cost, 0);
+                
+                // Update state with generated data
+                setFormData(prev => ({
+                    ...prev,
+                    recommendations: recs,
+                    timeline: timeline,
+                    budget: {
+                        ...prev.budget,
+                        estimatedCost: totalCost,
+                        items: budgetItems
+                    }
+                }));
+            } catch (error) {
+                console.error('Error generating recommendations:', error);
+            }
         };
 
         const getBestSeason = (state, actionType) => {
@@ -1463,7 +1499,6 @@
     // Property Form Component
     function PropertyForm({ data, update, sampleWeeds }) {
         const [localData, setLocalData] = useState(data);
-        const [searchResults, setSearchResults] = useState([]);
         
         const propertyFeatures = [
             'Creeks or rivers', 'Native vegetation', 'Wetlands', 'Rocky outcrops',
@@ -2166,126 +2201,220 @@
         const [photoNotes, setPhotoNotes] = useState('');
         const fileInputRef = useRef(null);
         const [activeLayer, setActiveLayer] = useState('street');
+        const [isMapInitialized, setIsMapInitialized] = useState(false);
         
         // Initialize map
         useEffect(() => {
-            if (!mapInstance.current && mapRef.current && window.L) {
-                const map = window.L.map(mapRef.current);
-                
-                // Add base layers
-                const streetLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                });
-                
-                const satelliteLayer = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: '© Esri'
-                });
-                
-                const topoLayer = window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenTopoMap'
-                });
-                
-                streetLayer.addTo(map);
-                
-                // Add layer control
-                const baseLayers = {
-                    'Street Map': streetLayer,
-                    'Satellite View': satelliteLayer,
-                    'Topographic Map': topoLayer
-                };
-                
-                window.L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
-                
-                // Initialize drawn items
-                const drawnItems = new window.L.FeatureGroup();
-                map.addLayer(drawnItems);
-                drawnItemsRef.current = drawnItems;
-                
-                // Add draw control
-                const drawControl = new window.L.Control.Draw({
-                    edit: { featureGroup: drawnItems },
-                    draw: {
-                        polygon: { showArea: true },
-                        polyline: true,
-                        rectangle: { showArea: true },
-                        circle: false,
-                        marker: true
-                    }
-                });
-                map.addControl(drawControl);
-                
-                // Set initial view
-                if (coordinates) {
-                    map.setView([coordinates.lat, coordinates.lng], 14);
-                } else {
-                    map.setView([-35.0, 149.0], 10);
+            if (!isMapInitialized && mapRef.current && window.L) {
+                try {
+                    const map = window.L.map(mapRef.current, {
+                        zoomControl: true,
+                        attributionControl: true
+                    });
+                    
+                    // Set initial view - default to Australia
+                    map.setView([-28.0, 137.0], 4);
+                    
+                    // Add base layers
+                    const streetLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19
+                    }).addTo(map);
+                    
+                    const satelliteLayer = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: '© Esri',
+                        maxZoom: 19
+                    });
+                    
+                    const topoLayer = window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenTopoMap',
+                        maxZoom: 17
+                    });
+                    
+                    // Add layer control
+                    const baseLayers = {
+                        'Street Map': streetLayer,
+                        'Satellite View': satelliteLayer,
+                        'Topographic Map': topoLayer
+                    };
+                    
+                    window.L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
+                    
+                    // Initialize drawn items
+                    const drawnItems = new window.L.FeatureGroup();
+                    map.addLayer(drawnItems);
+                    drawnItemsRef.current = drawnItems;
+                    
+                    // Add draw control
+                    const drawControl = new window.L.Control.Draw({
+                        edit: {
+                            featureGroup: drawnItems,
+                            remove: true
+                        },
+                        draw: {
+                            polygon: {
+                                allowIntersection: false,
+                                showArea: true,
+                                shapeOptions: {
+                                    color: '#2196F3',
+                                    fillColor: '#2196F3'
+                                }
+                            },
+                            polyline: false,
+                            rectangle: {
+                                showArea: true,
+                                shapeOptions: {
+                                    color: '#2196F3',
+                                    fillColor: '#2196F3'
+                                }
+                            },
+                            circle: false,
+                            marker: {
+                                icon: window.L.divIcon({
+                                    className: 'custom-marker',
+                                    html: '<div style="background-color: #2196F3; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                                    iconSize: [24, 24]
+                                })
+                            }
+                        }
+                    });
+                    
+                    map.addControl(drawControl);
+                    
+                    // Handle draw events
+                    map.on('draw:created', function (e) {
+                        const layer = e.layer;
+                        drawnItems.addLayer(layer);
+                        
+                        // Auto-fill zone name based on type
+                        const typeNames = {
+                            'management': 'Management Area',
+                            'problem': 'Problem Area',
+                            'sensitive': 'Sensitive Area',
+                            'other': 'Other Area'
+                        };
+                        
+                        setZoneName(`${typeNames[zoneType]} ${zones.length + 1}`);
+                        
+                        // Store the drawn layer reference
+                        layer.zoneId = Date.now();
+                        layer.zoneType = zoneType;
+                    });
+                    
+                    mapInstance.current = map;
+                    setIsMapInitialized(true);
+                    
+                } catch (error) {
+                    console.error('Error initializing map:', error);
                 }
-                
-                mapInstance.current = map;
             }
             
             return () => {
                 if (mapInstance.current) {
                     mapInstance.current.remove();
+                    mapInstance.current = null;
                 }
             };
         }, []);
         
         // Add existing zones to map
         useEffect(() => {
-            if (mapInstance.current && drawnItemsRef.current && zones) {
-                drawnItemsRef.current.clearLayers();
-                
-                zones.forEach((zone, index) => {
-                    let layer;
-                    const color = getZoneColor(zone.type);
+            if (isMapInitialized && mapInstance.current && drawnItemsRef.current && zones) {
+                try {
+                    drawnItemsRef.current.clearLayers();
                     
-                    if (zone.coordinates.type === 'Point') {
-                        layer = window.L.marker(
-                            [zone.coordinates.coordinates[1], zone.coordinates.coordinates[0]],
-                            {
-                                icon: window.L.divIcon({
-                                    className: 'custom-marker',
-                                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                                    iconSize: [24, 24]
-                                })
-                            }
-                        );
-                    } else {
-                        layer = window.L.geoJSON(zone.coordinates).getLayers()[0];
-                        layer.setStyle({
-                            color: color,
-                            fillColor: color,
-                            fillOpacity: 0.15,
-                            weight: 3
-                        });
-                    }
-                    
-                    if (layer) {
-                        layer.bindPopup(`
-                            <div class="p-2">
-                                <h4 class="font-bold">${zone.name}</h4>
-                                <p class="text-sm">Type: ${zone.type}</p>
-                                ${zone.notes ? `<p class="text-sm mt-1">${zone.notes}</p>` : ''}
-                                <div class="mt-2 flex gap-1">
-                                    <button onclick="window.editZone(${zone.id})" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
-                                        Edit
-                                    </button>
-                                    <button onclick="window.deleteZone(${zone.id})" class="px-2 py-1 bg-red-500 text-white text-xs rounded">
-                                        Delete
-                                    </button>
+                    zones.forEach((zone) => {
+                        let layer;
+                        const color = getZoneColor(zone.type);
+                        
+                        if (zone.coordinates && zone.coordinates.type === 'Point') {
+                            layer = window.L.marker(
+                                [zone.coordinates.coordinates[1], zone.coordinates.coordinates[0]],
+                                {
+                                    icon: window.L.divIcon({
+                                        className: 'custom-marker',
+                                        html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                                        iconSize: [24, 24]
+                                    })
+                                }
+                            );
+                        } else if (zone.coordinates && zone.coordinates.type === 'Polygon') {
+                            const latLngs = zone.coordinates.coordinates[0].map(coord => 
+                                [coord[1], coord[0]]
+                            );
+                            layer = window.L.polygon(latLngs, {
+                                color: color,
+                                fillColor: color,
+                                fillOpacity: 0.15,
+                                weight: 3
+                            });
+                        } else {
+                            // Default sample polygon if no coordinates
+                            const sampleLatLngs = [
+                                [-35.0, 149.0],
+                                [-35.0, 149.1],
+                                [-35.1, 149.1],
+                                [-35.1, 149.0],
+                                [-35.0, 149.0]
+                            ];
+                            layer = window.L.polygon(sampleLatLngs, {
+                                color: color,
+                                fillColor: color,
+                                fillOpacity: 0.15,
+                                weight: 3
+                            });
+                        }
+                        
+                        if (layer) {
+                            layer.bindPopup(`
+                                <div class="p-2">
+                                    <h4 class="font-bold">${zone.name}</h4>
+                                    <p class="text-sm">Type: ${zone.type}</p>
+                                    ${zone.notes ? `<p class="text-sm mt-1">${zone.notes}</p>` : ''}
+                                    <div class="mt-2 flex gap-1">
+                                        <button onclick="window.dispatchEvent(new CustomEvent('editZone', { detail: ${zone.id} }))" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="window.dispatchEvent(new CustomEvent('deleteZone', { detail: ${zone.id} }))" class="px-2 py-1 bg-red-500 text-white text-xs rounded">
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        `);
-                        drawnItemsRef.current.addLayer(layer);
+                            `);
+                            drawnItemsRef.current.addLayer(layer);
+                        }
+                    });
+                    
+                    // Listen for edit/delete events from popups
+                    window.addEventListener('editZone', (e) => {
+                        const zoneId = e.detail;
+                        const zone = zones.find(z => z.id === zoneId);
+                        if (zone) {
+                            setEditingZone(zoneId);
+                            setZoneName(zone.name);
+                            setZoneType(zone.type);
+                            setZoneNotes(zone.notes || '');
+                        }
+                    });
+                    
+                    window.addEventListener('deleteZone', (e) => {
+                        const zoneId = e.detail;
+                        if (confirm('Delete this zone?')) {
+                            removeZone(zoneId);
+                        }
+                    });
+                    
+                    if (zones.length > 0 && drawnItemsRef.current.getLayers().length > 0) {
+                        const bounds = drawnItemsRef.current.getBounds();
+                        if (bounds.isValid()) {
+                            mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
+                        }
                     }
-                });
-                
-                if (zones.length > 0 && drawnItemsRef.current.getBounds().isValid()) {
-                    mapInstance.current.fitBounds(drawnItemsRef.current.getBounds());
+                } catch (error) {
+                    console.error('Error adding zones to map:', error);
                 }
             }
-        }, [zones]);
+        }, [zones, isMapInitialized]);
         
         const getZoneColor = (type) => {
             const colors = {
@@ -2311,14 +2440,31 @@
                 });
                 setEditingZone(null);
             } else {
-                // In a real implementation, you would capture drawn features
-                // For now, we'll create a sample zone
-                const sampleZone = {
-                    id: Date.now(),
-                    name: zoneName,
-                    type: zoneType,
-                    notes: zoneNotes,
-                    coordinates: {
+                // Get the last drawn layer
+                const layers = drawnItemsRef.current?.getLayers() || [];
+                let coordinates = null;
+                
+                if (layers.length > 0) {
+                    const lastLayer = layers[layers.length - 1];
+                    
+                    if (lastLayer instanceof window.L.Marker) {
+                        const latLng = lastLayer.getLatLng();
+                        coordinates = {
+                            type: 'Point',
+                            coordinates: [latLng.lng, latLng.lat]
+                        };
+                    } else if (lastLayer instanceof window.L.Polygon) {
+                        const latLngs = lastLayer.getLatLngs()[0];
+                        coordinates = {
+                            type: 'Polygon',
+                            coordinates: [latLngs.map(latLng => [latLng.lng, latLng.lat])]
+                        };
+                    }
+                }
+                
+                // If no drawn layer, create a sample one
+                if (!coordinates) {
+                    coordinates = {
                         type: 'Polygon',
                         coordinates: [[
                             [149.0, -35.0],
@@ -2327,9 +2473,18 @@
                             [149.0, -35.1],
                             [149.0, -35.0]
                         ]]
-                    }
+                    };
+                }
+                
+                const newZone = {
+                    id: Date.now(),
+                    name: zoneName,
+                    type: zoneType,
+                    notes: zoneNotes,
+                    coordinates: coordinates
                 };
-                addZone(sampleZone);
+                
+                addZone(newZone);
             }
             
             setZoneName('');
@@ -2339,18 +2494,31 @@
         
         const handleFileChange = (e) => {
             const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
             Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    alert(`File ${file.name} is not an image`);
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     addPhoto({
                         url: event.target.result,
                         notes: photoNotes,
+                        filename: file.name,
                         date: new Date().toISOString()
                     });
+                };
+                reader.onerror = (error) => {
+                    console.error('Error reading file:', error);
+                    alert(`Error reading file ${file.name}`);
                 };
                 reader.readAsDataURL(file);
             });
             setPhotoNotes('');
+            e.target.value = ''; // Reset file input
         };
         
         return (
@@ -2427,10 +2595,14 @@
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold">Interactive Map</h3>
                             <div className="text-sm text-gray-600">
-                                Use drawing tools to mark areas on your property
+                                Use drawing tools (right side of map) to mark areas
                             </div>
                         </div>
                         <div ref={mapRef} id="map" className="w-full"></div>
+                        <div className="text-sm text-gray-500 mt-2">
+                            <i className="fas fa-info-circle mr-1"></i>
+                            Draw shapes or markers using the toolbar on the right side of the map
+                        </div>
                     </div>
                     
                     {/* Zone Legend */}
@@ -2460,28 +2632,39 @@
                     <div className="mb-8">
                         <h3 className="font-bold mb-4">Site Photos</h3>
                         
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            {photos.map(photo => (
-                                <div key={photo.id} className="relative group">
-                                    <img 
-                                        src={photo.url} 
-                                        alt="Site photo"
-                                        className="w-full h-48 object-cover rounded-lg"
-                                    />
-                                    <button
-                                        onClick={() => removePhoto(photo.id)}
-                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100"
-                                    >
-                                        ×
-                                    </button>
-                                    {photo.notes && (
-                                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-2 text-sm rounded-b-lg">
-                                            {photo.notes}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        {photos.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                {photos.map(photo => (
+                                    <div key={photo.id} className="relative group">
+                                        <img 
+                                            src={photo.url} 
+                                            alt={photo.notes || "Site photo"}
+                                            className="w-full h-48 object-cover rounded-lg"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3EPhoto%3C/text%3E%3C/svg%3E";
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => removePhoto(photo.id)}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ×
+                                        </button>
+                                        {photo.notes && (
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-2 text-sm rounded-b-lg">
+                                                {photo.notes}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center p-8 bg-gray-50 rounded-lg mb-6">
+                                <i className="fas fa-camera text-gray-400 text-3xl mb-3"></i>
+                                <p className="text-gray-600">No photos added yet</p>
+                            </div>
+                        )}
                         
                         <div className="flex gap-3">
                             <input
@@ -2501,8 +2684,9 @@
                             />
                             <button
                                 onClick={() => fileInputRef.current.click()}
-                                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
                             >
+                                <i className="fas fa-upload mr-2"></i>
                                 Upload Photos
                             </button>
                         </div>
@@ -2924,6 +3108,8 @@
                     email: '',
                     notes: ''
                 });
+            } else {
+                alert('Please fill in at least name and organization');
             }
         };
         
@@ -2971,7 +3157,7 @@
                             
                             {localFunding.length === 0 ? (
                                 <p className="text-gray-500 p-4 text-center">
-                                    Select your state in Property Profile to see funding programs.
+                                    {state ? `No funding programs found for ${state}` : 'Select your state in Property Profile to see funding programs.'}
                                 </p>
                             ) : (
                                 <div className="space-y-4">
@@ -3185,9 +3371,14 @@
                 return;
             }
             
-            const csv = Papa.unparse(data);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            saveAs(blob, filename);
+            try {
+                const csv = Papa.unparse(data);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                saveAs(blob, filename);
+            } catch (error) {
+                console.error('Error exporting CSV:', error);
+                alert('Error exporting data');
+            }
         };
         
         const exportRecommendations = () => {
@@ -3383,8 +3574,13 @@
         );
     }
 
-    // Render the app
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+        const root = document.getElementById('root');
+        if (root) {
+            ReactDOM.render(<App />, root);
+        }
+    });
 </script>
 </body>
 </html>
