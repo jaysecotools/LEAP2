@@ -3356,14 +3356,248 @@
         
         const [isGenerating, setIsGenerating] = useState(false);
         
-        const generatePDF = async () => {
-            setIsGenerating(true);
-            // PDF generation implementation would go here
-            setTimeout(() => {
-                alert('PDF generation would start here. In a full implementation, this would create a comprehensive PDF report.');
-                setIsGenerating(false);
-            }, 1500);
+const generatePDF = async () => {
+    setIsGenerating(true);
+    
+    try {
+        // Create a new jsPDF instance
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        let yPosition = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        const contentWidth = pageWidth - (2 * margin);
+        
+        // Function to add a new page if needed
+        const addNewPageIfNeeded = (spaceNeeded = 10) => {
+            if (yPosition + spaceNeeded > doc.internal.pageSize.getHeight() - 20) {
+                doc.addPage();
+                yPosition = 20;
+                return true;
+            }
+            return false;
         };
+        
+        // Add header
+        doc.setFillColor(26, 93, 26); // Primary green color
+        doc.rect(0, 0, pageWidth, 30, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LEAP Pro Report', pageWidth / 2, 18, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Landholder Environmental Action Planner', pageWidth / 2, 25, { align: 'center' });
+        
+        yPosition = 40;
+        
+        // Property Information Section
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Property Information', margin, yPosition);
+        yPosition += 10;
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        
+        const propertyInfo = [
+            `Property Name: ${formData.property.name || 'Not specified'}`,
+            `Location: ${formData.property.location || 'Not specified'}`,
+            `Size: ${formData.property.size || 'Not specified'} hectares`,
+            `State: ${formData.property.state || 'Not specified'}`,
+            `Rainfall: ${formData.property.rainfall || 'Not specified'}`,
+            `Soil Type: ${formData.property.soilType || 'Not specified'}`
+        ];
+        
+        propertyInfo.forEach(info => {
+            addNewPageIfNeeded();
+            doc.text(info, margin, yPosition);
+            yPosition += 7;
+        });
+        
+        yPosition += 5;
+        
+        // Environmental Issues Summary
+        addNewPageIfNeeded(15);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Environmental Issues Identified', margin, yPosition);
+        yPosition += 10;
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        
+        const issues = [];
+        if (formData.problems.erosion.present) {
+            issues.push(`✓ Soil Erosion (${formData.problems.erosion.severity} severity)`);
+        }
+        if (formData.problems.weeds.length > 0) {
+            issues.push(`✓ Weed Problems: ${formData.problems.weeds.join(', ')}`);
+        }
+        if (formData.problems.habitatLoss.present) {
+            issues.push(`✓ Habitat Loss (${formData.problems.habitatLoss.severity} severity)`);
+        }
+        if (formData.problems.waterQuality.present) {
+            issues.push(`✓ Water Quality Issues (${formData.problems.waterQuality.severity} severity)`);
+        }
+        if (formData.problems.fireRisk.present) {
+            issues.push(`✓ Fire Risk (${formData.problems.fireRisk.severity} severity)`);
+        }
+        if (formData.problems.salinity.present) {
+            issues.push(`✓ Salinity (${formData.problems.salinity.severity} severity)`);
+        }
+        if (formData.problems.feralAnimals.present && formData.problems.feralAnimals.species.length > 0) {
+            issues.push(`✓ Feral Animals: ${formData.problems.feralAnimals.species.join(', ')}`);
+        }
+        
+        if (issues.length === 0) {
+            issues.push('No environmental issues identified');
+        }
+        
+        issues.forEach(issue => {
+            addNewPageIfNeeded();
+            doc.text(`• ${issue}`, margin, yPosition);
+            yPosition += 6;
+        });
+        
+        yPosition += 5;
+        
+        // Recommendations Summary
+        if (formData.recommendations.length > 0) {
+            addNewPageIfNeeded(20);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Action Plan Recommendations', margin, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            
+            formData.recommendations.forEach((rec, index) => {
+                addNewPageIfNeeded(20);
+                
+                doc.setFillColor(240, 240, 240);
+                doc.rect(margin, yPosition - 5, contentWidth, 12, 'F');
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${index + 1}. ${rec.title}`, margin + 2, yPosition);
+                
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                // Priority and timeframe
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Priority: ${rec.priority} | Timeframe: ${rec.timeframe} | Estimated Cost: $${rec.estimatedCost?.toLocaleString() || '5,000'}`, 
+                        margin + 2, yPosition);
+                yPosition += 7;
+                
+                // Actions
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Actions:', margin + 2, yPosition);
+                yPosition += 6;
+                
+                rec.actions.slice(0, 3).forEach(action => {
+                    addNewPageIfNeeded();
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`• ${action}`, margin + 5, yPosition);
+                    yPosition += 6;
+                });
+                
+                yPosition += 8;
+            });
+        }
+        
+        // Budget Summary
+        if (formData.budget?.estimatedCost > 0) {
+            addNewPageIfNeeded(20);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Budget Summary', margin, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            
+            doc.text(`Total Estimated Cost: $${formData.budget.estimatedCost.toLocaleString()}`, margin, yPosition);
+            yPosition += 10;
+            
+            if (formData.budget.items?.length > 0) {
+                doc.setFont('helvetica', 'bold');
+                doc.text('Cost Breakdown:', margin, yPosition);
+                yPosition += 7;
+                
+                formData.budget.items.forEach(item => {
+                    addNewPageIfNeeded();
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`• ${item.item}: $${item.cost.toLocaleString()} (${item.timeframe})`, margin + 5, yPosition);
+                    yPosition += 6;
+                });
+            }
+        }
+        
+        // Timeline Summary
+        if (formData.timeline.length > 0) {
+            addNewPageIfNeeded(20);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Implementation Timeline', margin, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            
+            formData.timeline.slice(0, 5).forEach((item, index) => {
+                addNewPageIfNeeded(15);
+                
+                doc.setFillColor(240, 240, 240);
+                doc.rect(margin, yPosition - 3, contentWidth, 10, 'F');
+                
+                doc.setTextColor(0, 0, 0);
+                doc.text(`${index + 1}. ${item.action}`, margin + 2, yPosition + 3);
+                yPosition += 8;
+                
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Timeframe: ${item.timeframe} | Priority: ${item.priority} | Best Season: ${item.season}`, 
+                        margin + 2, yPosition + 3);
+                yPosition += 8;
+            });
+        }
+        
+        // Footer with date and page numbers
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on ${new Date().toLocaleDateString()}`, margin, doc.internal.pageSize.getHeight() - 10);
+            doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+        }
+        
+        // Save the PDF
+        const fileName = `LEAP_Plan_${formData.property.name || 'Property'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        setIsGenerating(false);
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+        setIsGenerating(false);
+    }
+};
         
         const exportToCSV = (data, filename) => {
             if (!data || data.length === 0) {
