@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEAP Pro - Landholder Environmental Action Planner</title>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Leaflet Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <link href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" rel="stylesheet"/>
+    
+    <!-- Mapping Extensions -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.76.1/dist/L.Control.Locate.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.76.1/dist/L.Control.Locate.min.css" rel="stylesheet"/>
+    <script src="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.umd.js"></script>
+    <link href="https://unpkg.com/leaflet-geosearch@3.8.0/assets/css/leaflet.css" rel="stylesheet" />
+    
+    <!-- Export & Utilities -->
+    <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- UI Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #1a5d1a;
+            --secondary: #2d936c;
+            --accent: #4CAF50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196F3;
+        }
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+        
+        #map { 
+            height: 500px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .zone-management { background-color: rgba(33, 150, 243, 0.15); border-color: #2196F3; }
+        .zone-problem { background-color: rgba(244, 67, 54, 0.15); border-color: #f44336; }
+        .zone-sensitive { background-color: rgba(76, 175, 80, 0.15); border-color: #4CAF50; }
+        .zone-other { background-color: rgba(255, 152, 0, 0.15); border-color: #ff9800; }
+        
+        .zone-label-text {
+            background-color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 2px solid #333;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .splash-container {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(26, 93, 26, 0.3);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(26, 93, 26, 0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 93, 26, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.5s ease;
+        }
+        
+        .step-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .step-active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(26, 93, 26, 0.3);
+        }
+        
+        .step-completed {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .step-inactive {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+        
+        .priority-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .priority-high { background: #fee; color: #c53030; border: 1px solid #feb2b2; }
+        .priority-medium { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+        .priority-low { background: #f0fff4; color: #2f855a; border: 1px solid #9ae6b4; }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .floating-action-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(26, 93, 26, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(26, 93, 26, 0.5);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .accordion-item {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        
+        .accordion-header {
+            padding: 18px 24px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+        
+        .accordion-header:hover {
+            background: #e9ecef;
+        }
+        
+        .accordion-content {
+            padding: 24px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 93, 26, 0.1);
+            outline: none;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26, 93, 26, 0.1);
+            outline: none;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted #666;
+            cursor: help;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            font-weight: normal;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--primary);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+<script type="text/babel">
+    const { useState, useEffect, useRef, useContext } = React;
+    
+    // Create context for global state
+    const AppContext = React.createContext();
+    
+    // Utility functions
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString('en-AU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+    
+    // Enhanced sample data with more comprehensive information
+    const sampleWeeds = {
+        'NSW': [
+            { name: 'African lovegrass', category: 'grass', control: 'Herbicide application, pasture improvement', season: 'Spring-Summer' },
+            { name: 'Blackberry', category: 'shrub', control: 'Cut-stump herbicide, biological control', season: 'Late winter' },
+            { name: 'Gorse', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Year-round' },
+            { name: 'Lantana', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Spring-Autumn' },
+            { name: 'Serrated tussock', category: 'grass', control: 'Herbicide, competitive pasture', season: 'Spring' }
+        ],
+        'VIC': [
+            { name: 'Bridal creeper', category: 'vine', control: 'Herbicide, biological control', season: 'Winter-Spring' },
+            { name: 'Gorse', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Year-round' },
+            { name: 'Paterson\'s curse', category: 'herb', control: 'Herbicide, grazing management', season: 'Autumn-Spring' },
+            { name: 'Willows', category: 'tree', control: 'Cut-stump herbicide', season: 'Summer-Autumn' },
+            { name: 'English broom', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Spring' }
+        ],
+        'QLD': [
+            { name: 'Lantana', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Spring-Autumn' },
+            { name: 'Parthenium weed', category: 'herb', control: 'Herbicide, competitive pasture', season: 'Year-round' },
+            { name: 'Pond apple', category: 'tree', control: 'Cut-stump herbicide', season: 'Any' },
+            { name: 'Rubber vine', category: 'vine', control: 'Herbicide, mechanical removal', season: 'Wet season' },
+            { name: 'Singapore daisy', category: 'ground cover', control: 'Herbicide, manual removal', season: 'Year-round' }
+        ],
+        'WA': [
+            { name: 'Arum lily', category: 'herb', control: 'Herbicide, manual removal', season: 'Winter-Spring' },
+            { name: 'Bridal creeper', category: 'vine', control: 'Herbicide, biological control', season: 'Winter-Spring' },
+            { name: 'Watsonia', category: 'bulb', control: 'Herbicide, bulb removal', season: 'Spring' },
+            { name: 'Geraldton carnation weed', category: 'herb', control: 'Herbicide, competitive pasture', season: 'Winter-Spring' },
+            { name: 'Ehrharta', category: 'grass', control: 'Herbicide, pasture improvement', season: 'Autumn-Spring' }
+        ],
+        'SA': [
+            { name: 'Olive', category: 'tree', control: 'Cut-stump herbicide', season: 'Any' },
+            { name: 'Bridal creeper', category: 'vine', control: 'Herbicide, biological control', season: 'Winter-Spring' },
+            { name: 'Geraldton carnation weed', category: 'herb', control: 'Herbicide, competitive pasture', season: 'Winter-Spring' },
+            { name: 'Buffel grass', category: 'grass', control: 'Herbicide, competitive natives', season: 'Summer-Autumn' },
+            { name: 'Horehound', category: 'herb', control: 'Herbicide, competitive pasture', season: 'Spring-Summer' }
+        ],
+        'TAS': [
+            { name: 'Gorse', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Year-round' },
+            { name: 'Broom', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Spring' },
+            { name: 'Willows', category: 'tree', control: 'Cut-stump herbicide', season: 'Summer-Autumn' },
+            { name: 'Holly', category: 'tree', control: 'Cut-stump herbicide', season: 'Any' },
+            { name: 'Spanish heath', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Spring' }
+        ],
+        'NT': [
+            { name: 'Gamba grass', category: 'grass', control: 'Herbicide, fire management', season: 'Wet season' },
+            { name: 'Parkinsonia', category: 'tree', control: 'Cut-stump herbicide', season: 'Dry season' },
+            { name: 'Rubber vine', category: 'vine', control: 'Herbicide, mechanical removal', season: 'Wet season' },
+            { name: 'Pond apple', category: 'tree', control: 'Cut-stump herbicide', season: 'Any' },
+            { name: 'Mimosa pigra', category: 'shrub', control: 'Herbicide, mechanical removal', season: 'Wet season' }
+        ]
+    };
+    
+    const fundingPrograms = {
+        'NSW': [
+            { name: 'Landcare grants', provider: 'Local Land Services', amount: '$5,000-$50,000', deadline: 'Ongoing' },
+            { name: 'Bushfire recovery funding', provider: 'NSW Government', amount: 'Up to $75,000', deadline: '30/06/2024' },
+            { name: 'Biodiversity conservation trust', provider: 'BCT', amount: 'Varies', deadline: 'Multiple rounds' }
+        ],
+        'VIC': [
+            { name: 'Catchment management grants', provider: 'CMA', amount: '$2,000-$100,000', deadline: 'Ongoing' },
+            { name: 'Landcare grants', provider: 'Landcare Victoria', amount: '$5,000-$30,000', deadline: '15/04/2024' },
+            { name: 'Bushfire biodiversity recovery', provider: 'DELWP', amount: 'Up to $50,000', deadline: '30/09/2024' }
+        ],
+        'QLD': [
+            { name: 'Land restoration fund', provider: 'QLD Government', amount: '$10,000-$500,000', deadline: 'Multiple rounds' },
+            { name: 'Reef Trust', provider: 'QLD Government', amount: 'Varies', deadline: 'Ongoing' },
+            { name: 'Natural resource grants', provider: 'NRM', amount: '$5,000-$100,000', deadline: '30/06/2024' }
+        ],
+        'WA': [
+            { name: 'State NRM program', provider: 'WA Government', amount: '$5,000-$75,000', deadline: 'Ongoing' },
+            { name: 'Landcare grants', provider: 'Landcare WA', amount: '$3,000-$25,000', deadline: '31/05/2024' },
+            { name: 'Community stewardship', provider: 'DPIRD', amount: 'Up to $50,000', deadline: 'Multiple rounds' }
+        ],
+        'SA': [
+            { name: 'Landscape board grants', provider: 'Landscape SA', amount: '$2,000-$60,000', deadline: 'Ongoing' },
+            { name: 'Native vegetation grants', provider: 'DEW', amount: '$5,000-$30,000', deadline: '15/08/2024' },
+            { name: 'Soil conservation grants', provider: 'SA Government', amount: 'Up to $25,000', deadline: '30/11/2024' }
+        ],
+        'TAS': [
+            { name: 'NRM North grants', provider: 'NRM North', amount: '$1,000-$40,000', deadline: 'Ongoing' },
+            { name: 'Landcare grants', provider: 'Landcare Tasmania', amount: '$3,000-$20,000', deadline: '30/04/2024' },
+            { name: 'Private land conservation', provider: 'DPIPWE', amount: 'Varies', deadline: 'Multiple rounds' }
+        ],
+        'NT': [
+            { name: 'Landcare grants', provider: 'Landcare NT', amount: '$5,000-$30,000', deadline: 'Ongoing' },
+            { name: 'Indigenous ranger programs', provider: 'NLC', amount: 'Varies', deadline: 'Multiple rounds' },
+            { name: 'Desert knowledge grants', provider: 'DKCRC', amount: 'Up to $50,000', deadline: '30/09/2024' }
+        ]
+    };
+    
+    // Error Boundary Component
+    class ErrorBoundary extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = { hasError: false, error: null };
+        }
+
+        static getDerivedStateFromError(error) {
+            return { hasError: true, error };
+        }
+
+        componentDidCatch(error, errorInfo) {
+            console.error("LEAP Error:", error, errorInfo);
+        }
+
+        render() {
+            if (this.state.hasError) {
+                return (
+                    <div className="card max-w-2xl mx-auto my-8">
+                        <div className="text-center p-8">
+                            <div className="text-red-500 text-5xl mb-4">
+                                <i className="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">Something went wrong</h3>
+                            <p className="text-gray-600 mb-4">We encountered an error while loading the application.</p>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="btn-primary"
+                            >
+                                <i className="fas fa-redo mr-2"></i> Reload Application
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            return this.props.children;
+        }
+    }
+
+    // Main App Component
+    function App() {
+        const [currentStep, setCurrentStep] = useState(0);
+        const [isLoading, setIsLoading] = useState(true);
+        const [showHelp, setShowHelp] = useState(false);
+        const [activeModal, setActiveModal] = useState(null);
+        const [formData, setFormData] = useState(() => {
+            const savedData = localStorage.getItem('leapFormData');
+            const defaultData = {
+                property: {
+                    name: '',
+                    size: '',
+                    location: '',
+                    state: '',
+                    features: [],
+                    rainfall: '',
+                    soilType: '',
+                    coordinates: null,
+                    elevation: '',
+                    aspect: '',
+                    vegetation: []
+                },
+                problems: {
+                    erosion: { present: false, severity: 'low', type: '', notes: '' },
+                    weeds: [],
+                    habitatLoss: { present: false, severity: 'low', type: '', notes: '' },
+                    waterQuality: { present: false, severity: 'low', type: '', notes: '' },
+                    fireRisk: { present: false, severity: 'low', type: '', notes: '' },
+                    salinity: { present: false, severity: 'low', notes: '' },
+                    feralAnimals: { present: false, species: [], notes: '' },
+                    otherProblems: '',
+                    goals: []
+                },
+                mapZones: [],
+                recommendations: [],
+                timeline: [],
+                photos: [],
+                budget: {
+                    estimatedCost: 0,
+                    fundingSources: [],
+                    timeline: []
+                },
+                contacts: []
+            };
+            
+            return savedData ? JSON.parse(savedData) : defaultData;
+        });
+
+        const steps = [
+            { title: 'Dashboard', icon: '🏠', description: 'Overview & Quick Start' },
+            { title: 'Property Profile', icon: '📋', description: 'Property Details & Features' },
+            { title: 'Assessment', icon: '⚠️', description: 'Identify Issues & Goals' },
+            { title: 'Property Mapping', icon: '🗺️', description: 'Map Zones & Features' },
+            { title: 'Action Plan', icon: '💡', description: 'Recommendations & Solutions' },
+            { title: 'Implementation', icon: '📅', description: 'Timeline & Budget' },
+            { title: 'Resources', icon: '🔗', description: 'Funding & Contacts' },
+            { title: 'Export', icon: '📤', description: 'Share & Download' }
+        ];
+
+        // Load data on mount
+        useEffect(() => {
+            setIsLoading(false);
+            
+            // Check for URL parameters (for sharing)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('template')) {
+                loadTemplate(urlParams.get('template'));
+            }
+        }, []);
+
+        // Save to localStorage whenever formData changes
+        useEffect(() => {
+            if (!isLoading) {
+                localStorage.setItem('leapFormData', JSON.stringify(formData));
+            }
+        }, [formData, isLoading]);
+
+        const loadTemplate = (templateName) => {
+            // Load predefined templates based on council/group type
+            const templates = {
+                'landcare': {
+                    property: {
+                        features: ['Native vegetation', 'Creeks or rivers', 'Pasture areas'],
+                        goals: ['Improve biodiversity', 'Control invasive species', 'Create wildlife habitat']
+                    }
+                },
+                'council': {
+                    problems: {
+                        erosion: { present: true, severity: 'medium' },
+                        weeds: ['African lovegrass', 'Blackberry'],
+                        goals: ['Reduce erosion', 'Improve water quality', 'Enhance farm productivity']
+                    }
+                }
+            };
+            
+            if (templates[templateName]) {
+                setFormData(prev => ({
+                    ...prev,
+                    ...templates[templateName]
+                }));
+                alert(`Loaded ${templateName} template`);
+            }
+        };
+
+        const nextStep = () => {
+            if (currentStep === 1 && !formData.property.name) {
+                alert('Please provide a property name');
+                return;
+            }
+            setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
+        };
+        
+        const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
+
+        const updateFormData = (section, data) => {
+            setFormData(prev => ({
+                ...prev,
+                [section]: { ...prev[section], ...data }
+            }));
+        };
+
+        const addMapZone = (zone) => {
+            setFormData(prev => ({
+                ...prev,
+                mapZones: [...prev.mapZones, { ...zone, id: Date.now() }]
+            }));
+        };
+
+        const updateZone = (id, updates) => {
+            setFormData(prev => ({
+                ...prev,
+                mapZones: prev.mapZones.map(zone => 
+                    zone.id === id ? { ...zone, ...updates } : zone
+                )
+            }));
+        };
+
+        const removeZone = (id) => {
+            setFormData(prev => ({
+                ...prev,
+                mapZones: prev.mapZones.filter(zone => zone.id !== id)
+            }));
+        };
+
+        const addPhoto = (photo) => {
+            setFormData(prev => ({
+                ...prev,
+                photos: [...prev.photos, { ...photo, id: Date.now(), date: new Date().toISOString() }]
+            }));
+        };
+
+        const removePhoto = (id) => {
+            setFormData(prev => ({
+                ...prev,
+                photos: prev.photos.filter(photo => photo.id !== id)
+            }));
+        };
+
+        const addContact = (contact) => {
+            setFormData(prev => ({
+                ...prev,
+                contacts: [...prev.contacts, { ...contact, id: Date.now() }]
+            }));
+        };
+
+        const clearLocalStorage = () => {
+            if (confirm('Are you sure you want to clear all saved data? This cannot be undone.')) {
+                localStorage.removeItem('leapFormData');
+                setFormData({
+                    property: {
+                        name: '',
+                        size: '',
+                        location: '',
+                        state: '',
+                        features: [],
+                        rainfall: '',
+                        soilType: '',
+                        coordinates: null,
+                        elevation: '',
+                        aspect: '',
+                        vegetation: []
+                    },
+                    problems: {
+                        erosion: { present: false, severity: 'low', type: '', notes: '' },
+                        weeds: [],
+                        habitatLoss: { present: false, severity: 'low', type: '', notes: '' },
+                        waterQuality: { present: false, severity: 'low', type: '', notes: '' },
+                        fireRisk: { present: false, severity: 'low', type: '', notes: '' },
+                        salinity: { present: false, severity: 'low', notes: '' },
+                        feralAnimals: { present: false, species: [], notes: '' },
+                        otherProblems: '',
+                        goals: []
+                    },
+                    mapZones: [],
+                    recommendations: [],
+                    timeline: [],
+                    photos: [],
+                    budget: {
+                        estimatedCost: 0,
+                        fundingSources: [],
+                        timeline: []
+                    },
+                    contacts: []
+                });
+                setCurrentStep(0);
+                alert('All saved data has been cleared. Starting fresh.');
+            }
+        };
+
+        const generateRecommendations = () => {
+            const recs = [];
+            const timeline = [];
+            const budgetItems = [];
+            const now = new Date();
+            
+            // Detailed weed management recommendations
+            if (formData.problems.weeds.length > 0) {
+                const stateWeeds = sampleWeeds[formData.property.state] || [];
+                const detailedWeeds = formData.problems.weeds.map(weedName => {
+                    return stateWeeds.find(w => w.name === weedName) || { name: weedName };
+                });
+                
+                const weedRec = {
+                    title: 'Integrated Weed Management Plan',
+                    category: 'vegetation',
+                    actions: [
+                        'Conduct a detailed weed mapping exercise to identify infestation boundaries',
+                        'Prioritize control based on weed invasiveness and site accessibility',
+                        'Implement a combination of control methods: mechanical, chemical, biological',
+                        'Develop a monitoring schedule to assess control effectiveness',
+                        'Establish competitive ground cover to prevent re-invasion'
+                    ],
+                    priority: 'high',
+                    whyImportant: 'Effective weed management prevents loss of productive land, protects native biodiversity, reduces fire fuel loads, and maintains ecosystem function.',
+                    resources: fundingPrograms[formData.property.state] || [],
+                    estimatedCost: 5000,
+                    timeframe: '6-24 months',
+                    detailedWeeds: detailedWeeds
+                };
+                
+                recs.push(weedRec);
+                
+                budgetItems.push({
+                    item: 'Weed control program',
+                    cost: 5000,
+                    priority: 'high',
+                    timeframe: 'Months 1-6'
+                });
+                
+                timeline.push({
+                    action: 'Initial weed assessment and mapping',
+                    timeframe: '1-2 months',
+                    season: getBestSeason(formData.property.state, 'weeds'),
+                    priority: 'high',
+                    details: 'Map all weed infestations, identify species, and assess densities',
+                    responsible: 'Landholder + NRM officer'
+                });
+            }
+            
+            // Erosion control with engineering solutions
+            if (formData.problems.erosion.present) {
+                const severity = formData.problems.erosion.severity;
+                const erosionRec = {
+                    title: 'Erosion Control and Soil Conservation',
+                    category: 'soil',
+                    actions: severity === 'high' ? [
+                        'Install structural erosion control measures (check dams, silt fences)',
+                        'Construct contour banks in cropping areas',
+                        'Implement grade stabilization structures in drainage lines',
+                        'Revegetate with deep-rooted native grasses and shrubs',
+                        'Establish windbreaks in areas prone to wind erosion'
+                    ] : [
+                        'Implement vegetative buffers along waterways',
+                        'Reduce ground disturbance through rotational grazing',
+                        'Maintain ground cover year-round',
+                        'Use contour planting in sloping areas',
+                        'Monitor erosion hotspots quarterly'
+                    ],
+                    priority: severity === 'high' ? 'high' : 'medium',
+                    whyImportant: 'Soil erosion leads to loss of productive topsoil, reduced water quality, sedimentation of waterways, and decreased land productivity.',
+                    resources: [],
+                    estimatedCost: severity === 'high' ? 15000 : 5000,
+                    timeframe: severity === 'high' ? '3-12 months' : '6-24 months'
+                };
+                
+                recs.push(erosionRec);
+                
+                budgetItems.push({
+                    item: 'Erosion control works',
+                    cost: severity === 'high' ? 15000 : 5000,
+                    priority: severity === 'high' ? 'high' : 'medium',
+                    timeframe: severity === 'high' ? 'Months 1-3' : 'Months 3-12'
+                });
+            }
+            
+            // Habitat restoration with ecological considerations
+            if (formData.problems.habitatLoss.present || formData.problems.goals.includes('Improve biodiversity')) {
+                const habitatRec = {
+                    title: 'Habitat Restoration and Connectivity',
+                    category: 'biodiversity',
+                    actions: [
+                        'Plant locally indigenous vegetation in strategic locations',
+                        'Create wildlife corridors to connect habitat patches',
+                        'Install nest boxes for hollow-dependent species',
+                        'Control feral predators where necessary',
+                        'Monitor wildlife usage with camera traps',
+                        'Consider fencing to protect sensitive regeneration areas'
+                    ],
+                    priority: 'medium',
+                    whyImportant: 'Habitat restoration increases biodiversity, supports ecosystem services (pollination, pest control), enhances landscape resilience, and provides climate adaptation benefits.',
+                    resources: [],
+                    estimatedCost: 10000,
+                    timeframe: '12-36 months'
+                };
+                
+                recs.push(habitatRec);
+                
+                budgetItems.push({
+                    item: 'Habitat restoration planting',
+                    cost: 10000,
+                    priority: 'medium',
+                    timeframe: 'Months 6-18'
+                });
+            }
+            
+            // Water quality management plan
+            if (formData.problems.waterQuality.present || formData.property.features.includes('Creeks or rivers')) {
+                const waterRec = {
+                    title: 'Waterway and Riparian Management',
+                    category: 'water',
+                    actions: [
+                        'Fence waterways to exclude stock (minimum 30m buffer)',
+                        'Revegetate riparian zones with native sedges, rushes and trees',
+                        'Install off-stream watering points for livestock',
+                        'Monitor water quality parameters quarterly',
+                        'Control erosion in catchment areas',
+                        'Manage nutrient runoff from agricultural areas'
+                    ],
+                    priority: 'medium',
+                    whyImportant: 'Healthy waterways provide clean water, support aquatic ecosystems, reduce flood risk, maintain stream stability, and enhance landscape values.',
+                    resources: [],
+                    estimatedCost: 8000,
+                    timeframe: '6-24 months'
+                };
+                
+                recs.push(waterRec);
+            }
+            
+            // Fire management with planning
+            if (formData.problems.fireRisk.present) {
+                const fireRec = {
+                    title: 'Bushfire Risk Management',
+                    category: 'fire',
+                    actions: [
+                        'Create and maintain asset protection zones around buildings',
+                        'Develop a comprehensive fire management plan',
+                        'Implement strategic fuel reduction program',
+                        'Establish and maintain fire access trails',
+                        'Install water supply points for firefighting',
+                        'Participate in local fire planning committees'
+                    ],
+                    priority: 'high',
+                    whyImportant: 'Proactive fire management protects life and property, reduces wildfire intensity, maintains ecosystem health through appropriate fire regimes, and supports community safety.',
+                    resources: [],
+                    estimatedCost: 12000,
+                    timeframe: '3-12 months'
+                };
+                
+                recs.push(fireRec);
+            }
+            
+            // Carbon farming opportunities
+            if (formData.problems.goals.includes('Carbon sequestration')) {
+                const carbonRec = {
+                    title: 'Carbon Farming and Storage',
+                    category: 'climate',
+                    actions: [
+                        'Implement rotational grazing to increase soil carbon',
+                        'Plant permanent native vegetation in marginal areas',
+                        'Reduce tillage intensity in cropping systems',
+                        'Investigate carbon farming methodology eligibility',
+                        'Monitor soil carbon levels over time',
+                        'Explore carbon market opportunities'
+                    ],
+                    priority: 'medium',
+                    whyImportant: 'Increasing carbon sequestration mitigates climate change, improves soil health and fertility, enhances water retention, and can generate additional farm income.',
+                    resources: [],
+                    estimatedCost: 7000,
+                    timeframe: '12-60 months'
+                };
+                
+                recs.push(carbonRec);
+            }
+            
+            // Calculate total budget
+            const totalCost = budgetItems.reduce((sum, item) => sum + item.cost, 0);
+            
+            // Update state with generated data
+            setFormData(prev => ({
+                ...prev,
+                recommendations: recs,
+                timeline: timeline,
+                budget: {
+                    ...prev.budget,
+                    estimatedCost: totalCost,
+                    items: budgetItems
+                }
+            }));
+        };
+
+        const getBestSeason = (state, actionType) => {
+            const seasons = {
+                'NSW': { weeds: 'Spring', planting: 'Autumn', burning: 'Autumn', earthworks: 'Summer' },
+                'VIC': { weeds: 'Spring', planting: 'Autumn', burning: 'Autumn', earthworks: 'Summer' },
+                'QLD': { weeds: 'Wet season', planting: 'Wet season', burning: 'Dry season', earthworks: 'Dry season' },
+                'WA': { weeds: 'Spring', planting: 'Winter', burning: 'Autumn', earthworks: 'Summer' },
+                'SA': { weeds: 'Spring', planting: 'Autumn', burning: 'Autumn', earthworks: 'Summer' },
+                'TAS': { weeds: 'Spring', planting: 'Spring', burning: 'Autumn', earthworks: 'Summer' },
+                'NT': { weeds: 'Wet season', planting: 'Wet season', burning: 'Dry season', earthworks: 'Dry season' }
+            };
+            
+            return seasons[state]?.[actionType] || 'Spring';
+        };
+
+        useEffect(() => {
+            if (currentStep === 4) {
+                generateRecommendations();
+            }
+        }, [currentStep]);
+
+        const renderStep = () => {
+            switch(currentStep) {
+                case 0:
+                    return <Dashboard 
+                        formData={formData} 
+                        nextStep={nextStep}
+                        clearLocalStorage={clearLocalStorage}
+                    />;
+                case 1:
+                    return <PropertyForm 
+                        data={formData.property} 
+                        update={(data) => updateFormData('property', data)} 
+                        sampleWeeds={sampleWeeds}
+                    />;
+                case 2:
+                    return <AssessmentForm 
+                        data={formData.problems} 
+                        update={(data) => updateFormData('problems', data)} 
+                        sampleWeeds={sampleWeeds}
+                        state={formData.property.state}
+                    />;
+                case 3:
+                    return <MapTool 
+                        zones={formData.mapZones} 
+                        addZone={addMapZone}
+                        updateZone={updateZone}
+                        removeZone={removeZone}
+                        propertyName={formData.property.name}
+                        location={formData.property.location}
+                        coordinates={formData.property.coordinates}
+                        photos={formData.photos}
+                        addPhoto={addPhoto}
+                        removePhoto={removePhoto}
+                    />;
+                case 4:
+                    return <ActionPlan 
+                        recommendations={formData.recommendations} 
+                        problems={formData.problems}
+                    />;
+                case 5:
+                    return <Implementation 
+                        timeline={formData.timeline} 
+                        budget={formData.budget}
+                        recommendations={formData.recommendations}
+                    />;
+                case 6:
+                    return <Resources 
+                        state={formData.property.state}
+                        contacts={formData.contacts}
+                        addContact={addContact}
+                        fundingPrograms={fundingPrograms}
+                    />;
+                case 7:
+                    return <ExportPanel 
+                        formData={formData} 
+                        clearLocalStorage={clearLocalStorage}
+                    />;
+                default:
+                    return <Dashboard 
+                        formData={formData} 
+                        nextStep={nextStep}
+                        clearLocalStorage={clearLocalStorage}
+                    />;
+            }
+        };
+
+        return (
+            <AppContext.Provider value={{ formData, setFormData, activeModal, setActiveModal }}>
+                <div className="min-h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="bg-white shadow-sm border-b">
+                        <div className="container mx-auto px-4 py-3">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center">
+                                    <div className="bg-green-100 p-2 rounded-lg mr-3">
+                                        <i className="fas fa-leaf text-green-600 text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl font-bold text-green-800">LEAP Pro</h1>
+                                        <p className="text-sm text-gray-600">Landholder Environmental Action Planner</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-4">
+                                    {formData.property.name && (
+                                        <div className="hidden md:block bg-green-50 px-4 py-2 rounded-lg">
+                                            <span className="text-sm font-medium text-green-700">
+                                                <i className="fas fa-map-marker-alt mr-2"></i>
+                                                {formData.property.name}
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    <button 
+                                        onClick={() => setShowHelp(!showHelp)}
+                                        className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg"
+                                        title="Help & Support"
+                                    >
+                                        <i className="fas fa-question-circle text-gray-600"></i>
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setActiveModal('settings')}
+                                        className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg"
+                                        title="Settings"
+                                    >
+                                        <i className="fas fa-cog text-gray-600"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    {/* Progress Navigation */}
+                    <div className="bg-white border-b">
+                        <div className="container mx-auto px-4 py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-800">{steps[currentStep].title}</h2>
+                                    <p className="text-sm text-gray-600">{steps[currentStep].description}</p>
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                    Step {currentStep + 1} of {steps.length}
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <div className="flex space-x-2 flex-1">
+                                    {steps.map((step, index) => (
+                                        <div key={index} className="flex-1 flex flex-col items-center">
+                                            <button
+                                                onClick={() => setCurrentStep(index)}
+                                                className={`step-indicator ${
+                                                    currentStep === index ? 'step-active' :
+                                                    currentStep > index ? 'step-completed' : 'step-inactive'
+                                                }`}
+                                            >
+                                                {currentStep > index ? (
+                                                    <i className="fas fa-check"></i>
+                                                ) : (
+                                                    <span className="text-sm">{index + 1}</span>
+                                                )}
+                                            </button>
+                                            <span className="text-xs mt-2 text-center hidden md:block">{step.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Main Content */}
+                    <main className="flex-grow container mx-auto px-4 py-8">
+                        <ErrorBoundary>
+                            {isLoading ? (
+                                <div className="flex justify-center items-center h-64">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                                        <p className="text-gray-600">Loading LEAP Application...</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="fade-in">
+                                    {renderStep()}
+                                </div>
+                            )}
+                        </ErrorBoundary>
+                    </main>
+                    
+                    {/* Navigation Footer */}
+                    <footer className="bg-white border-t">
+                        <div className="container mx-auto px-4 py-4">
+                            <div className="flex justify-between items-center">
+                                <button 
+                                    onClick={prevStep}
+                                    disabled={currentStep === 0}
+                                    className={`flex items-center px-6 py-3 rounded-lg ${
+                                        currentStep === 0 
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                    }`}
+                                >
+                                    <i className="fas fa-arrow-left mr-2"></i>
+                                    Previous
+                                </button>
+                                
+                                <div className="flex space-x-3">
+                                    <button 
+                                        onClick={() => setActiveModal('save')}
+                                        className="px-6 py-3 rounded-lg border border-green-600 text-green-600 hover:bg-green-50"
+                                    >
+                                        <i className="far fa-save mr-2"></i>
+                                        Save Draft
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={nextStep}
+                                        className={`btn-primary flex items-center ${
+                                            currentStep === steps.length - 1 ? 'hidden' : ''
+                                        }`}
+                                    >
+                                        {currentStep === steps.length - 2 ? 'Finalize' : 'Next'}
+                                        <i className="fas fa-arrow-right ml-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                    
+                    {/* Help Modal */}
+                    {showHelp && (
+                        <div className="modal-overlay" onClick={() => setShowHelp(false)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-bold">Help & Support</h3>
+                                        <button 
+                                            onClick={() => setShowHelp(false)}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <i className="fas fa-times text-xl"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="accordion-item">
+                                            <div className="accordion-header">
+                                                <span>Getting Started Guide</span>
+                                                <i className="fas fa-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="accordion-item">
+                                            <div className="accordion-header">
+                                                <span>Mapping Tools Tutorial</span>
+                                                <i className="fas fa-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="accordion-item">
+                                            <div className="accordion-header">
+                                                <span>Contact Your Local NRM Officer</span>
+                                                <i className="fas fa-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Settings Modal */}
+                    {activeModal === 'settings' && (
+                        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-bold">Settings</h3>
+                                        <button 
+                                            onClick={() => setActiveModal(null)}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <i className="fas fa-times text-xl"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h4 className="font-medium mb-3">Data Management</h4>
+                                            <button 
+                                                onClick={clearLocalStorage}
+                                                className="w-full text-left p-3 bg-red-50 hover:bg-red-100 rounded-lg text-red-700"
+                                            >
+                                                <i className="fas fa-trash mr-2"></i>
+                                                Clear All Data and Start Fresh
+                                            </button>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 className="font-medium mb-3">Export Settings</h4>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center">
+                                                    <input type="checkbox" className="mr-2" defaultChecked />
+                                                    Include high-resolution maps
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input type="checkbox" className="mr-2" defaultChecked />
+                                                    Include photos in PDF
+                                                </label>
+                                                <label className="flex items-center">
+                                                    <input type="checkbox" className="mr-2" />
+                                                    Include detailed cost estimates
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Floating Action Button */}
+                    {currentStep > 0 && currentStep < steps.length - 1 && (
+                        <div className="floating-action-btn" onClick={() => setActiveModal('quickActions')}>
+                            <i className="fas fa-bolt text-xl"></i>
+                        </div>
+                    )}
+                    
+                    {/* Quick Actions Modal */}
+                    {activeModal === 'quickActions' && (
+                        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+                            <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-xl font-bold">Quick Actions</h3>
+                                        <button 
+                                            onClick={() => setActiveModal(null)}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <i className="fas fa-times text-xl"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-center">
+                                            <i className="fas fa-camera text-blue-600 text-xl mb-2"></i>
+                                            <div className="font-medium">Add Photo</div>
+                                        </button>
+                                        <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg text-center">
+                                            <i className="fas fa-map-marker-alt text-green-600 text-xl mb-2"></i>
+                                            <div className="font-medium">Mark Zone</div>
+                                        </button>
+                                        <button className="p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg text-center">
+                                            <i className="fas fa-sticky-note text-yellow-600 text-xl mb-2"></i>
+                                            <div className="font-medium">Add Note</div>
+                                        </button>
+                                        <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-center">
+                                            <i className="fas fa-question-circle text-purple-600 text-xl mb-2"></i>
+                                            <div className="font-medium">Get Help</div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </AppContext.Provider>
+        );
+    }
+
+    // Dashboard Component
+    function Dashboard({ formData, nextStep, clearLocalStorage }) {
+        const stats = {
+            zones: formData.mapZones.length,
+            issues: Object.values(formData.problems).filter(p => p.present || Array.isArray(p) && p.length > 0).length,
+            recommendations: formData.recommendations.length,
+            photos: formData.photos.length
+        };
+        
+        return (
+            <div className="max-w-6xl mx-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Welcome & Quick Actions */}
+                    <div className="lg:col-span-2">
+                        <div className="splash-container text-white p-8 mb-8">
+                            <h2 className="text-3xl font-bold mb-4">Welcome to LEAP Pro</h2>
+                            <p className="text-lg mb-6 opacity-90">Create a comprehensive environmental action plan for your property with our step-by-step guidance.</p>
+                            
+                            <div className="flex flex-wrap gap-4">
+                                <button onClick={nextStep} className="btn-primary">
+                                    <i className="fas fa-play mr-2"></i>
+                                    Start New Plan
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (formData.property.name) {
+                                            nextStep();
+                                        } else {
+                                            alert("Please start a new plan first");
+                                        }
+                                    }}
+                                    className="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50"
+                                >
+                                    <i className="fas fa-file-import mr-2"></i>
+                                    Continue Existing Plan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Quick Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="fas fa-map"></i>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold">{stats.zones}</div>
+                                    <div className="text-gray-600">Mapped Zones</div>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold">{stats.issues}</div>
+                                    <div className="text-gray-600">Issues Identified</div>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="fas fa-lightbulb"></i>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold">{stats.recommendations}</div>
+                                    <div className="text-gray-600">Recommendations</div>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon">
+                                    <i className="fas fa-camera"></i>
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-bold">{stats.photos}</div>
+                                    <div className="text-gray-600">Site Photos</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Recent Activity */}
+                        <div className="card mb-8">
+                            <h3 className="text-xl font-bold mb-4">Recent Activity</h3>
+                            {formData.property.name ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                                        <div className="bg-green-100 p-2 rounded-lg mr-3">
+                                            <i className="fas fa-home text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">Property Profile Created</div>
+                                            <div className="text-sm text-gray-600">{formData.property.name}</div>
+                                        </div>
+                                    </div>
+                                    {stats.zones > 0 && (
+                                        <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                                            <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                                                <i className="fas fa-map-marked-alt text-blue-600"></i>
+                                            </div>
+                                            <div>
+                                                <div className="font-medium">Zones Mapped</div>
+                                                <div className="text-sm text-gray-600">{stats.zones} areas identified</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 p-4 text-center">No activity yet. Start your first plan!</p>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Right Column - Templates & Resources */}
+                    <div>
+                        <div className="card mb-6">
+                            <h3 className="text-xl font-bold mb-4">Quick Start Templates</h3>
+                            <div className="space-y-3">
+                                <button className="w-full text-left p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200">
+                                    <div className="font-medium mb-1">Landcare Group Template</div>
+                                    <div className="text-sm text-gray-600">Focus on biodiversity and community projects</div>
+                                </button>
+                                <button className="w-full text-left p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200">
+                                    <div className="font-medium mb-1">Council Compliance Template</div>
+                                    <div className="text-sm text-gray-600">Meeting local government requirements</div>
+                                </button>
+                                <button className="w-full text-left p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200">
+                                    <div className="font-medium mb-1">Farm Sustainability Template</div>
+                                    <div className="text-sm text-gray-600">Balancing production and conservation</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="card">
+                            <h3 className="text-xl font-bold mb-4">Resources & Support</h3>
+                            <div className="space-y-4">
+                                <a href="#" className="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                                    <div className="bg-gray-100 p-2 rounded-lg mr-3">
+                                        <i className="fas fa-file-pdf text-red-500"></i>
+                                    </div>
+                                    <div>
+                                        <div className="font-medium">User Guide (PDF)</div>
+                                        <div className="text-sm text-gray-600">Complete documentation</div>
+                                    </div>
+                                </a>
+                                <a href="#" className="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                                    <div className="bg-gray-100 p-2 rounded-lg mr-3">
+                                        <i className="fas fa-video text-blue-500"></i>
+                                    </div>
+                                    <div>
+                                        <div className="font-medium">Video Tutorials</div>
+                                        <div className="text-sm text-gray-600">Step-by-step guides</div>
+                                    </div>
+                                </a>
+                                <a href="#" className="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+                                    <div className="bg-gray-100 p-2 rounded-lg mr-3">
+                                        <i className="fas fa-phone-alt text-green-500"></i>
+                                    </div>
+                                    <div>
+                                        <div className="font-medium">Support Contacts</div>
+                                        <div className="text-sm text-gray-600">Local NRM officers</div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Property Form Component
+    function PropertyForm({ data, update, sampleWeeds }) {
+        const [localData, setLocalData] = useState(data);
+        const [searchResults, setSearchResults] = useState([]);
+        
+        const propertyFeatures = [
+            'Creeks or rivers', 'Native vegetation', 'Wetlands', 'Rocky outcrops',
+            'Existing fencing', 'Farm infrastructure', 'Pasture areas', 'Forest/woodland',
+            'Cropping areas', 'Dam/s', 'Stockyards', 'Access roads'
+        ];
+        
+        const vegetationTypes = [
+            'Native grassland', 'Woodland', 'Forest', 'Wetland', 'Riparian',
+            'Plantation', 'Pasture', 'Cropping', 'Revegetation area', 'Bare ground'
+        ];
+        
+        const handleChange = (e) => {
+            const { name, value, type, checked } = e.target;
+            setLocalData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        };
+        
+        const handleFeatureToggle = (feature) => {
+            setLocalData(prev => {
+                const newFeatures = prev.features.includes(feature)
+                    ? prev.features.filter(f => f !== feature)
+                    : [...prev.features, feature];
+                return { ...prev, features: newFeatures };
+            });
+        };
+        
+        const handleVegetationToggle = (veg) => {
+            setLocalData(prev => {
+                const newVeg = prev.vegetation.includes(veg)
+                    ? prev.vegetation.filter(v => v !== veg)
+                    : [...prev.vegetation, veg];
+                return { ...prev, vegetation: newVeg };
+            });
+        };
+        
+        useEffect(() => {
+            update(localData);
+        }, [localData]);
+        
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Property Profile</h2>
+                        <p className="text-gray-600">Tell us about your property's characteristics and features</p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        <i className="fas fa-info-circle mr-1"></i>
+                        All information is saved automatically
+                    </div>
+                </div>
+                
+                <div className="card">
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4 pb-2 border-b">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="form-label">
+                                    Property Name <span className="text-red-500">*</span>
+                                    <span className="tooltip ml-1">?
+                                        <span className="tooltip-text">Enter a descriptive name for your property (e.g., "Riverbend Farm")</span>
+                                    </span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={localData.name}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="e.g., Riverbend Farm"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="form-label">Property Size</label>
+                                <div className="flex">
+                                    <input
+                                        type="number"
+                                        name="size"
+                                        value={localData.size}
+                                        onChange={handleChange}
+                                        className="form-input rounded-r-none"
+                                        placeholder="e.g., 50"
+                                        min="0"
+                                    />
+                                    <div className="bg-gray-100 px-4 flex items-center rounded-r-lg border border-l-0 border-gray-300">
+                                        hectares
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4 pb-2 border-b">Location Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div>
+                                <label className="form-label">Nearest Town/Address</label>
+                                <input
+                                    type="text"
+                                    name="location"
+                                    value={localData.location}
+                                    onChange={handleChange}
+                                    className="form-input"
+                                    placeholder="e.g., Bega, NSW"
+                                />
+                            </div>
+                            <div>
+                                <label className="form-label">State/Territory</label>
+                                <select
+                                    name="state"
+                                    value={localData.state}
+                                    onChange={handleChange}
+                                    className="form-select"
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="NSW">New South Wales</option>
+                                    <option value="VIC">Victoria</option>
+                                    <option value="QLD">Queensland</option>
+                                    <option value="WA">Western Australia</option>
+                                    <option value="SA">South Australia</option>
+                                    <option value="TAS">Tasmania</option>
+                                    <option value="NT">Northern Territory</option>
+                                    <option value="ACT">Australian Capital Territory</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="form-label">Annual Rainfall</label>
+                                <select
+                                    name="rainfall"
+                                    value={localData.rainfall}
+                                    onChange={handleChange}
+                                    className="form-select"
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="<250">Less than 250mm</option>
+                                    <option value="250-500">250-500mm</option>
+                                    <option value="500-750">500-750mm</option>
+                                    <option value="750-1000">750-1000mm</option>
+                                    <option value=">1000">More than 1000mm</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="form-label">Dominant Soil Type</label>
+                                <select
+                                    name="soilType"
+                                    value={localData.soilType}
+                                    onChange={handleChange}
+                                    className="form-select"
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="clay">Clay</option>
+                                    <option value="sandy">Sandy</option>
+                                    <option value="loam">Loam</option>
+                                    <option value="rocky">Rocky</option>
+                                    <option value="alluvial">Alluvial</option>
+                                    <option value="volcanic">Volcanic</option>
+                                    <option value="peat">Peat</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="form-label">Elevation Range</label>
+                                <select
+                                    name="elevation"
+                                    value={localData.elevation}
+                                    onChange={handleChange}
+                                    className="form-select"
+                                >
+                                    <option value="">Select...</option>
+                                    <option value="coastal">Coastal (0-100m)</option>
+                                    <option value="lowland">Lowland (100-500m)</option>
+                                    <option value="upland">Upland (500-1000m)</option>
+                                    <option value="mountain">Mountain (1000m+)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4 pb-2 border-b">Property Features</h3>
+                        <div className="mb-6">
+                            <label className="form-label mb-3">What features does your property have?</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {propertyFeatures.map(feature => (
+                                    <div key={feature} className="flex items-start">
+                                        <div className="flex items-center h-5">
+                                            <input
+                                                type="checkbox"
+                                                id={`feature-${feature}`}
+                                                checked={localData.features.includes(feature)}
+                                                onChange={() => handleFeatureToggle(feature)}
+                                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                            />
+                                        </div>
+                                        <label htmlFor={`feature-${feature}`} className="ml-2 block text-sm text-gray-700">
+                                            {feature}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label className="form-label mb-3">Vegetation Types Present</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {vegetationTypes.map(veg => (
+                                    <div key={veg} className="flex items-start">
+                                        <div className="flex items-center h-5">
+                                            <input
+                                                type="checkbox"
+                                                id={`veg-${veg}`}
+                                                checked={localData.vegetation.includes(veg)}
+                                                onChange={() => handleVegetationToggle(veg)}
+                                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                            />
+                                        </div>
+                                        <label htmlFor={`veg-${veg}`} className="ml-2 block text-sm text-gray-700">
+                                            {veg}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {localData.state && sampleWeeds[localData.state] && (
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-bold mb-2 text-blue-800">
+                                <i className="fas fa-info-circle mr-2"></i>
+                                Common Weeds in {localData.state}
+                            </h4>
+                            <p className="text-sm text-gray-700 mb-3">These species are commonly found in your region:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {sampleWeeds[localData.state].slice(0, 5).map(weed => (
+                                    <div key={weed.name} className="bg-white px-3 py-1 rounded-lg border text-sm">
+                                        {weed.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Assessment Form Component
+    function AssessmentForm({ data, update, sampleWeeds, state }) {
+        const [localData, setLocalData] = useState(data);
+        const [otherWeed, setOtherWeed] = useState('');
+        const [otherGoal, setOtherGoal] = useState('');
+        
+        const managementGoals = [
+            'Improve biodiversity', 'Control invasive species', 'Reduce erosion',
+            'Improve water quality', 'Enhance farm productivity', 'Create wildlife habitat',
+            'Reduce fire risk', 'Carbon sequestration', 'Increase soil health',
+            'Meet regulatory requirements', 'Enhance landscape aesthetics',
+            'Develop sustainable grazing', 'Protect cultural heritage sites'
+        ];
+        
+        const feralSpecies = [
+            'Rabbits', 'Foxes', 'Cats', 'Deer', 'Pigs', 'Goats',
+            'Horses', 'Camels', 'Wild dogs', 'Cane toads'
+        ];
+        
+        const handleChange = (e) => {
+            const { name, value, type, checked } = e.target;
+            
+            if (name.includes('.')) {
+                const [parent, child] = name.split('.');
+                setLocalData(prev => ({
+                    ...prev,
+                    [parent]: {
+                        ...prev[parent],
+                        [child]: type === 'checkbox' ? checked : value
+                    }
+                }));
+            } else {
+                setLocalData(prev => ({
+                    ...prev,
+                    [name]: type === 'checkbox' ? checked : value
+                }));
+            }
+        };
+        
+        const handleWeedToggle = (weed) => {
+            setLocalData(prev => {
+                const newWeeds = prev.weeds.includes(weed)
+                    ? prev.weeds.filter(w => w !== weed)
+                    : [...prev.weeds, weed];
+                return { ...prev, weeds: newWeeds };
+            });
+        };
+        
+        const addOtherWeed = () => {
+            if (otherWeed.trim() && !localData.weeds.includes(otherWeed)) {
+                setLocalData(prev => ({
+                    ...prev,
+                    weeds: [...prev.weeds, otherWeed]
+                }));
+                setOtherWeed('');
+            }
+        };
+        
+        const handleGoalToggle = (goal) => {
+            setLocalData(prev => {
+                const newGoals = prev.goals.includes(goal)
+                    ? prev.goals.filter(g => g !== goal)
+                    : [...prev.goals, goal];
+                return { ...prev, goals: newGoals };
+            });
+        };
+        
+        const addOtherGoal = () => {
+            if (otherGoal.trim() && !localData.goals.includes(otherGoal)) {
+                setLocalData(prev => ({
+                    ...prev,
+                    goals: [...prev.goals, otherGoal]
+                }));
+                setOtherGoal('');
+            }
+        };
+        
+        const handleFeralToggle = (species) => {
+            setLocalData(prev => {
+                const newSpecies = prev.feralAnimals.species.includes(species)
+                    ? prev.feralAnimals.species.filter(s => s !== species)
+                    : [...prev.feralAnimals.species, species];
+                return {
+                    ...prev,
+                    feralAnimals: {
+                        ...prev.feralAnimals,
+                        species: newSpecies
+                    }
+                };
+            });
+        };
+        
+        useEffect(() => {
+            update(localData);
+        }, [localData]);
+        
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Property Assessment</h2>
+                        <p className="text-gray-600">Identify environmental issues and management goals</p>
+                    </div>
+                </div>
+                
+                <div className="space-y-8">
+                    {/* Environmental Issues */}
+                    <div className="card">
+                        <h3 className="text-lg font-bold mb-6 pb-2 border-b">Environmental Issues</h3>
+                        
+                        <div className="space-y-6">
+                            {[
+                                { 
+                                    id: 'erosion', 
+                                    label: 'Soil Erosion',
+                                    description: 'Loss of topsoil through water or wind action',
+                                    types: ['Sheet erosion', 'Gully erosion', 'Wind erosion', 'Stream bank erosion']
+                                },
+                                { 
+                                    id: 'habitatLoss', 
+                                    label: 'Habitat Loss/Degradation',
+                                    description: 'Decline in native vegetation or wildlife habitat',
+                                    types: ['Clearing', 'Fragmentation', 'Weed invasion', 'Overgrazing']
+                                },
+                                { 
+                                    id: 'waterQuality', 
+                                    label: 'Water Quality Issues',
+                                    description: 'Problems with turbidity, nutrients, or pollution',
+                                    types: ['Nutrient runoff', 'Sedimentation', 'Algal blooms', 'Salinity']
+                                },
+                                { 
+                                    id: 'fireRisk', 
+                                    label: 'Bushfire Risk',
+                                    description: 'Areas with high fuel load or near assets',
+                                    types: ['Fuel accumulation', 'Asset proximity', 'Access limitations', 'Vegetation type']
+                                },
+                                { 
+                                    id: 'salinity', 
+                                    label: 'Dryland or Irrigation Salinity',
+                                    description: 'Salt accumulation in soil or water',
+                                    types: ['Dryland salinity', 'Irrigation salinity', 'Waterlogging']
+                                }
+                            ].map(issue => (
+                                <div key={issue.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                                    <div className="flex items-start">
+                                        <div className="flex items-center h-5 pt-1">
+                                            <input
+                                                type="checkbox"
+                                                id={`${issue.id}-present`}
+                                                name={`${issue.id}.present`}
+                                                checked={localData[issue.id].present}
+                                                onChange={handleChange}
+                                                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                            />
+                                        </div>
+                                        <div className="ml-4 flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <label htmlFor={`${issue.id}-present`} className="block text-lg font-medium text-gray-800">
+                                                        {issue.label}
+                                                    </label>
+                                                    <p className="text-sm text-gray-600">{issue.description}</p>
+                                                </div>
+                                                {localData[issue.id].present && (
+                                                    <div className="text-sm">
+                                                        <span className="font-medium">Severity:</span>
+                                                        <select
+                                                            name={`${issue.id}.severity`}
+                                                            value={localData[issue.id].severity}
+                                                            onChange={handleChange}
+                                                            className="ml-2 px-2 py-1 border rounded"
+                                                        >
+                                                            <option value="low">Low</option>
+                                                            <option value="medium">Medium</option>
+                                                            <option value="high">High</option>
+                                                        </select>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {localData[issue.id].present && (
+                                                <div className="mt-4">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Type of {issue.label}:
+                                                    </label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {issue.types.map(type => (
+                                                            <button
+                                                                key={type}
+                                                                type="button"
+                                                                onClick={() => setLocalData(prev => ({
+                                                                    ...prev,
+                                                                    [issue.id]: {
+                                                                        ...prev[issue.id],
+                                                                        type: prev[issue.id].type === type ? '' : type
+                                                                    }
+                                                                }))}
+                                                                className={`px-3 py-1 rounded-full text-sm ${
+                                                                    localData[issue.id].type === type
+                                                                        ? 'bg-green-100 text-green-800 border border-green-300'
+                                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                }`}
+                                                            >
+                                                                {type}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    <div className="mt-4">
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Additional Notes:
+                                                        </label>
+                                                        <textarea
+                                                            name={`${issue.id}.notes`}
+                                                            value={localData[issue.id].notes}
+                                                            onChange={handleChange}
+                                                            className="w-full p-3 border rounded-lg"
+                                                            rows="2"
+                                                            placeholder="Describe the issue in more detail..."
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Weed Problems */}
+                    <div className="card">
+                        <h3 className="text-lg font-bold mb-6 pb-2 border-b">Weed Problems</h3>
+                        
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                                Select weed species present on your property:
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                {sampleWeeds[state]?.map(weed => (
+                                    <div key={weed.name} className="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            id={`weed-${weed.name}`}
+                                            checked={localData.weeds.includes(weed.name)}
+                                            onChange={() => handleWeedToggle(weed.name)}
+                                            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor={`weed-${weed.name}`} className="ml-3 flex-1">
+                                            <div className="font-medium">{weed.name}</div>
+                                            <div className="text-xs text-gray-500">Control: {weed.control}</div>
+                                        </label>
+                                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                            {weed.season}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="flex gap-2 mb-4">
+                                <input
+                                    type="text"
+                                    value={otherWeed}
+                                    onChange={(e) => setOtherWeed(e.target.value)}
+                                    placeholder="Add other weed species"
+                                    className="flex-grow p-3 border rounded-lg"
+                                />
+                                <button 
+                                    onClick={addOtherWeed}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                            
+                            {localData.weeds.length > 0 && (
+                                <div className="p-4 bg-green-50 rounded-lg">
+                                    <div className="font-medium mb-2">Selected Weeds:</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {localData.weeds.map(weed => (
+                                            <span key={weed} className="bg-white px-3 py-1 rounded-lg border text-sm flex items-center">
+                                                {weed}
+                                                <button 
+                                                    onClick={() => handleWeedToggle(weed)}
+                                                    className="ml-2 text-red-500 hover:text-red-700"
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Feral Animals */}
+                    <div className="card">
+                        <h3 className="text-lg font-bold mb-6 pb-2 border-b">Feral Animal Problems</h3>
+                        
+                        <div className="flex items-center mb-4">
+                            <input
+                                type="checkbox"
+                                id="feral-present"
+                                checked={localData.feralAnimals.present}
+                                onChange={(e) => setLocalData(prev => ({
+                                    ...prev,
+                                    feralAnimals: {
+                                        ...prev.feralAnimals,
+                                        present: e.target.checked
+                                    }
+                                }))}
+                                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="feral-present" className="ml-3 text-lg font-medium">
+                                Feral animals are a problem on my property
+                            </label>
+                        </div>
+                        
+                        {localData.feralAnimals.present && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                    Select feral species present:
+                                </label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                                    {feralSpecies.map(species => (
+                                        <div key={species} className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id={`feral-${species}`}
+                                                checked={localData.feralAnimals.species.includes(species)}
+                                                onChange={() => handleFeralToggle(species)}
+                                                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor={`feral-${species}`} className="ml-2 text-sm">
+                                                {species}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Impact Notes:
+                                    </label>
+                                    <textarea
+                                        value={localData.feralAnimals.notes}
+                                        onChange={(e) => setLocalData(prev => ({
+                                            ...prev,
+                                            feralAnimals: {
+                                                ...prev.feralAnimals,
+                                                notes: e.target.value
+                                            }
+                                        }))}
+                                        className="w-full p-3 border rounded-lg"
+                                        rows="3"
+                                        placeholder="Describe the impacts of feral animals on your property..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Management Goals */}
+                    <div className="card">
+                        <h3 className="text-lg font-bold mb-6 pb-2 border-b">Management Goals</h3>
+                        
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-4">
+                                What are your main objectives for your property? (Select all that apply)
+                            </label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {managementGoals.map(goal => (
+                                    <div key={goal} className="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            id={`goal-${goal}`}
+                                            checked={localData.goals.includes(goal)}
+                                            onChange={() => handleGoalToggle(goal)}
+                                            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                        />
+                                        <label htmlFor={`goal-${goal}`} className="ml-3">
+                                            {goal}
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="mt-4 flex gap-2">
+                                <input
+                                    type="text"
+                                    value={otherGoal}
+                                    onChange={(e) => setOtherGoal(e.target.value)}
+                                    placeholder="Add other goal"
+                                    className="flex-grow p-3 border rounded-lg"
+                                />
+                                <button 
+                                    onClick={addOtherGoal}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {localData.goals.length > 0 && (
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                                <div className="font-medium mb-2">Selected Goals:</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {localData.goals.map(goal => (
+                                        <span key={goal} className="bg-white px-3 py-1 rounded-lg border border-blue-200 text-sm">
+                                            {goal}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Other Concerns */}
+                    <div className="card">
+                        <h3 className="text-lg font-bold mb-4">Other Environmental Concerns</h3>
+                        <textarea
+                            name="otherProblems"
+                            value={localData.otherProblems}
+                            onChange={handleChange}
+                            className="w-full p-4 border rounded-lg"
+                            rows="4"
+                            placeholder="Any other issues, concerns, or observations about your property's environment..."
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Map Tool Component (Enhanced)
+    function MapTool({ zones, addZone, updateZone, removeZone, propertyName, location, coordinates, photos, addPhoto, removePhoto }) {
+        const mapRef = useRef(null);
+        const mapInstance = useRef(null);
+        const drawnItemsRef = useRef(null);
+        const [zoneName, setZoneName] = useState('');
+        const [zoneType, setZoneType] = useState('management');
+        const [zoneNotes, setZoneNotes] = useState('');
+        const [editingZone, setEditingZone] = useState(null);
+        const [photoNotes, setPhotoNotes] = useState('');
+        const fileInputRef = useRef(null);
+        const [activeLayer, setActiveLayer] = useState('street');
+        
+        // Initialize map
+        useEffect(() => {
+            if (!mapInstance.current && mapRef.current && window.L) {
+                const map = window.L.map(mapRef.current);
+                
+                // Add base layers
+                const streetLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                });
+                
+                const satelliteLayer = window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '© Esri'
+                });
+                
+                const topoLayer = window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenTopoMap'
+                });
+                
+                streetLayer.addTo(map);
+                
+                // Add layer control
+                const baseLayers = {
+                    'Street Map': streetLayer,
+                    'Satellite View': satelliteLayer,
+                    'Topographic Map': topoLayer
+                };
+                
+                window.L.control.layers(baseLayers, null, { collapsed: false }).addTo(map);
+                
+                // Initialize drawn items
+                const drawnItems = new window.L.FeatureGroup();
+                map.addLayer(drawnItems);
+                drawnItemsRef.current = drawnItems;
+                
+                // Add draw control
+                const drawControl = new window.L.Control.Draw({
+                    edit: { featureGroup: drawnItems },
+                    draw: {
+                        polygon: { showArea: true },
+                        polyline: true,
+                        rectangle: { showArea: true },
+                        circle: false,
+                        marker: true
+                    }
+                });
+                map.addControl(drawControl);
+                
+                // Set initial view
+                if (coordinates) {
+                    map.setView([coordinates.lat, coordinates.lng], 14);
+                } else {
+                    map.setView([-35.0, 149.0], 10);
+                }
+                
+                mapInstance.current = map;
+            }
+            
+            return () => {
+                if (mapInstance.current) {
+                    mapInstance.current.remove();
+                }
+            };
+        }, []);
+        
+        // Add existing zones to map
+        useEffect(() => {
+            if (mapInstance.current && drawnItemsRef.current && zones) {
+                drawnItemsRef.current.clearLayers();
+                
+                zones.forEach((zone, index) => {
+                    let layer;
+                    const color = getZoneColor(zone.type);
+                    
+                    if (zone.coordinates.type === 'Point') {
+                        layer = window.L.marker(
+                            [zone.coordinates.coordinates[1], zone.coordinates.coordinates[0]],
+                            {
+                                icon: window.L.divIcon({
+                                    className: 'custom-marker',
+                                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                                    iconSize: [24, 24]
+                                })
+                            }
+                        );
+                    } else {
+                        layer = window.L.geoJSON(zone.coordinates).getLayers()[0];
+                        layer.setStyle({
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.15,
+                            weight: 3
+                        });
+                    }
+                    
+                    if (layer) {
+                        layer.bindPopup(`
+                            <div class="p-2">
+                                <h4 class="font-bold">${zone.name}</h4>
+                                <p class="text-sm">Type: ${zone.type}</p>
+                                ${zone.notes ? `<p class="text-sm mt-1">${zone.notes}</p>` : ''}
+                                <div class="mt-2 flex gap-1">
+                                    <button onclick="window.editZone(${zone.id})" class="px-2 py-1 bg-blue-500 text-white text-xs rounded">
+                                        Edit
+                                    </button>
+                                    <button onclick="window.deleteZone(${zone.id})" class="px-2 py-1 bg-red-500 text-white text-xs rounded">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        `);
+                        drawnItemsRef.current.addLayer(layer);
+                    }
+                });
+                
+                if (zones.length > 0 && drawnItemsRef.current.getBounds().isValid()) {
+                    mapInstance.current.fitBounds(drawnItemsRef.current.getBounds());
+                }
+            }
+        }, [zones]);
+        
+        const getZoneColor = (type) => {
+            const colors = {
+                management: '#2196F3',
+                problem: '#f44336',
+                sensitive: '#4CAF50',
+                other: '#ff9800'
+            };
+            return colors[type] || '#2196F3';
+        };
+        
+        const saveZone = () => {
+            if (!zoneName.trim()) {
+                alert('Please provide a zone name');
+                return;
+            }
+            
+            if (editingZone !== null) {
+                updateZone(editingZone, {
+                    name: zoneName,
+                    type: zoneType,
+                    notes: zoneNotes
+                });
+                setEditingZone(null);
+            } else {
+                // In a real implementation, you would capture drawn features
+                // For now, we'll create a sample zone
+                const sampleZone = {
+                    id: Date.now(),
+                    name: zoneName,
+                    type: zoneType,
+                    notes: zoneNotes,
+                    coordinates: {
+                        type: 'Polygon',
+                        coordinates: [[
+                            [149.0, -35.0],
+                            [149.1, -35.0],
+                            [149.1, -35.1],
+                            [149.0, -35.1],
+                            [149.0, -35.0]
+                        ]]
+                    }
+                };
+                addZone(sampleZone);
+            }
+            
+            setZoneName('');
+            setZoneType('management');
+            setZoneNotes('');
+        };
+        
+        const handleFileChange = (e) => {
+            const files = e.target.files;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    addPhoto({
+                        url: event.target.result,
+                        notes: photoNotes,
+                        date: new Date().toISOString()
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+            setPhotoNotes('');
+        };
+        
+        return (
+            <div className="max-w-6xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Property Mapping</h2>
+                        <p className="text-gray-600">Map your property features, problem areas, and management zones</p>
+                    </div>
+                </div>
+                
+                <div className="card">
+                    <div className="mb-6">
+                        <div className="flex flex-col md:flex-row gap-4 mb-6">
+                            <div className="flex-1">
+                                <label className="form-label">Zone Name</label>
+                                <input
+                                    type="text"
+                                    value={zoneName}
+                                    onChange={(e) => setZoneName(e.target.value)}
+                                    className="form-input"
+                                    placeholder="e.g., North Paddock Weeds"
+                                />
+                            </div>
+                            <div>
+                                <label className="form-label">Zone Type</label>
+                                <select
+                                    value={zoneType}
+                                    onChange={(e) => setZoneType(e.target.value)}
+                                    className="form-select"
+                                >
+                                    <option value="management">Management Area</option>
+                                    <option value="problem">Problem Area</option>
+                                    <option value="sensitive">Sensitive Area</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="form-label">Notes</label>
+                                <input
+                                    type="text"
+                                    value={zoneNotes}
+                                    onChange={(e) => setZoneNotes(e.target.value)}
+                                    className="form-input"
+                                    placeholder="e.g., High priority for control"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <button
+                                onClick={saveZone}
+                                className="btn-primary"
+                            >
+                                {editingZone !== null ? 'Update Zone' : 'Add Zone'}
+                            </button>
+                            {editingZone !== null && (
+                                <button
+                                    onClick={() => {
+                                        setEditingZone(null);
+                                        setZoneName('');
+                                        setZoneType('management');
+                                        setZoneNotes('');
+                                    }}
+                                    className="px-4 py-2 border rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold">Interactive Map</h3>
+                            <div className="text-sm text-gray-600">
+                                Use drawing tools to mark areas on your property
+                            </div>
+                        </div>
+                        <div ref={mapRef} id="map" className="w-full"></div>
+                    </div>
+                    
+                    {/* Zone Legend */}
+                    <div className="mb-8">
+                        <h4 className="font-bold mb-3">Zone Legend</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 bg-blue-500 mr-2 rounded"></div>
+                                <span>Management Area</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 bg-red-500 mr-2 rounded"></div>
+                                <span>Problem Area</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 bg-green-500 mr-2 rounded"></div>
+                                <span>Sensitive Area</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-4 h-4 bg-orange-500 mr-2 rounded"></div>
+                                <span>Other Area</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Site Photos */}
+                    <div className="mb-8">
+                        <h3 className="font-bold mb-4">Site Photos</h3>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            {photos.map(photo => (
+                                <div key={photo.id} className="relative group">
+                                    <img 
+                                        src={photo.url} 
+                                        alt="Site photo"
+                                        className="w-full h-48 object-cover rounded-lg"
+                                    />
+                                    <button
+                                        onClick={() => removePhoto(photo.id)}
+                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100"
+                                    >
+                                        ×
+                                    </button>
+                                    {photo.notes && (
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-2 text-sm rounded-b-lg">
+                                            {photo.notes}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={photoNotes}
+                                onChange={(e) => setPhotoNotes(e.target.value)}
+                                placeholder="Photo description"
+                                className="flex-1 form-input"
+                            />
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => fileInputRef.current.click()}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                            >
+                                Upload Photos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Zones List */}
+                    <div>
+                        <h3 className="font-bold mb-4">Saved Zones ({zones.length})</h3>
+                        
+                        {zones.length === 0 ? (
+                            <div className="text-center p-8 bg-gray-50 rounded-lg">
+                                <i className="fas fa-map-marker-alt text-gray-400 text-3xl mb-3"></i>
+                                <p className="text-gray-600">No zones saved yet. Draw on the map and click "Add Zone".</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left">Name</th>
+                                            <th className="px-4 py-3 text-left">Type</th>
+                                            <th className="px-4 py-3 text-left">Notes</th>
+                                            <th className="px-4 py-3 text-left">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {zones.map(zone => (
+                                            <tr key={zone.id} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3">{zone.name}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                                        zone.type === 'management' ? 'bg-blue-100 text-blue-800' :
+                                                        zone.type === 'problem' ? 'bg-red-100 text-red-800' :
+                                                        zone.type === 'sensitive' ? 'bg-green-100 text-green-800' :
+                                                        'bg-orange-100 text-orange-800'
+                                                    }`}>
+                                                        {zone.type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-600">{zone.notes || '-'}</td>
+                                                <td className="px-4 py-3">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingZone(zone.id);
+                                                            setZoneName(zone.name);
+                                                            setZoneType(zone.type);
+                                                            setZoneNotes(zone.notes || '');
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-800 mr-3"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('Delete this zone?')) {
+                                                                removeZone(zone.id);
+                                                            }
+                                                        }}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Action Plan Component
+    function ActionPlan({ recommendations, problems }) {
+        const [activeCategory, setActiveCategory] = useState('all');
+        
+        const categories = [
+            { id: 'all', label: 'All Recommendations', count: recommendations.length },
+            { id: 'vegetation', label: 'Weed & Vegetation', count: recommendations.filter(r => r.category === 'vegetation').length },
+            { id: 'soil', label: 'Soil & Erosion', count: recommendations.filter(r => r.category === 'soil').length },
+            { id: 'water', label: 'Water Management', count: recommendations.filter(r => r.category === 'water').length },
+            { id: 'biodiversity', label: 'Biodiversity', count: recommendations.filter(r => r.category === 'biodiversity').length },
+            { id: 'fire', label: 'Fire Management', count: recommendations.filter(r => r.category === 'fire').length }
+        ];
+        
+        const filteredRecs = activeCategory === 'all' 
+            ? recommendations 
+            : recommendations.filter(r => r.category === activeCategory);
+        
+        return (
+            <div className="max-w-6xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Action Plan</h2>
+                        <p className="text-gray-600">Customized recommendations based on your property assessment</p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        {recommendations.length} recommendations generated
+                    </div>
+                </div>
+                
+                {/* Category Filter */}
+                <div className="flex overflow-x-auto mb-8 pb-2">
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setActiveCategory(cat.id)}
+                            className={`px-4 py-2 rounded-lg mr-2 whitespace-nowrap ${
+                                activeCategory === cat.id
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            {cat.label} ({cat.count})
+                        </button>
+                    ))}
+                </div>
+                
+                {recommendations.length === 0 ? (
+                    <div className="card text-center p-12">
+                        <i className="fas fa-lightbulb text-gray-400 text-5xl mb-4"></i>
+                        <h3 className="text-xl font-bold mb-2">No Recommendations Yet</h3>
+                        <p className="text-gray-600 mb-6">Complete the property assessment to generate customized recommendations.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {filteredRecs.map((rec, index) => (
+                            <div key={index} className="card">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className="text-xl font-bold">{rec.title}</h3>
+                                        <div className="flex items-center mt-1">
+                                            <span className={`priority-badge priority-${rec.priority} mr-3`}>
+                                                {rec.priority} priority
+                                            </span>
+                                            <span className="text-sm text-gray-600">
+                                                <i className="far fa-clock mr-1"></i>
+                                                {rec.timeframe || '12-24 months'}
+                                            </span>
+                                            <span className="text-sm text-gray-600 ml-3">
+                                                <i className="fas fa-dollar-sign mr-1"></i>
+                                                Estimated: ${rec.estimatedCost?.toLocaleString() || '5,000'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mb-6">
+                                    <h4 className="font-bold mb-2 text-gray-700">Why this is important:</h4>
+                                    <p className="text-gray-700">{rec.whyImportant}</p>
+                                </div>
+                                
+                                <div className="mb-6">
+                                    <h4 className="font-bold mb-3 text-gray-700">Recommended Actions:</h4>
+                                    <div className="space-y-2">
+                                        {rec.actions.map((action, i) => (
+                                            <div key={i} className="flex items-start">
+                                                <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                                                    <i className="fas fa-check text-green-600 text-xs"></i>
+                                                </div>
+                                                <span>{action}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                
+                                {rec.resources && rec.resources.length > 0 && (
+                                    <div>
+                                        <h4 className="font-bold mb-3 text-gray-700">Available Resources:</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {rec.resources.map((resource, i) => (
+                                                <div key={i} className="p-3 border rounded-lg hover:bg-gray-50">
+                                                    <div className="font-medium">{resource.name}</div>
+                                                    <div className="text-sm text-gray-600">{resource.provider}</div>
+                                                    <div className="text-sm mt-1">
+                                                        <span className="font-medium">Amount:</span> {resource.amount}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Implementation Component
+    function Implementation({ timeline, budget, recommendations }) {
+        const [timeframeFilter, setTimeframeFilter] = useState('all');
+        
+        const totalCost = budget?.estimatedCost || 0;
+        const timelineItems = timeline || [];
+        
+        const timeGroups = {
+            'immediate': timelineItems.filter(t => t.timeframe.includes('1-2') || t.timeframe === 'Immediate'),
+            'short-term': timelineItems.filter(t => t.timeframe.includes('3-6')),
+            'medium-term': timelineItems.filter(t => t.timeframe.includes('6-12')),
+            'long-term': timelineItems.filter(t => t.timeframe.includes('12') || t.timeframe.includes('24'))
+        };
+        
+        const filteredTimeline = timeframeFilter === 'all' 
+            ? timelineItems 
+            : timeGroups[timeframeFilter] || [];
+        
+        return (
+            <div className="max-w-6xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Implementation Plan</h2>
+                        <p className="text-gray-600">Timeline, budget, and implementation details</p>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Timeline */}
+                    <div className="lg:col-span-2">
+                        <div className="card mb-8">
+                            <h3 className="text-lg font-bold mb-6">Action Timeline</h3>
+                            
+                            {/* Timeframe Filter */}
+                            <div className="flex mb-6 overflow-x-auto">
+                                <button
+                                    onClick={() => setTimeframeFilter('all')}
+                                    className={`px-4 py-2 rounded-l-lg ${
+                                        timeframeFilter === 'all'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    All Actions
+                                </button>
+                                <button
+                                    onClick={() => setTimeframeFilter('immediate')}
+                                    className={`px-4 py-2 ${
+                                        timeframeFilter === 'immediate'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Immediate (1-2 months)
+                                </button>
+                                <button
+                                    onClick={() => setTimeframeFilter('short-term')}
+                                    className={`px-4 py-2 ${
+                                        timeframeFilter === 'short-term'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Short-term (3-6 months)
+                                </button>
+                                <button
+                                    onClick={() => setTimeframeFilter('medium-term')}
+                                    className={`px-4 py-2 ${
+                                        timeframeFilter === 'medium-term'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Medium-term (6-12 months)
+                                </button>
+                                <button
+                                    onClick={() => setTimeframeFilter('long-term')}
+                                    className={`px-4 py-2 rounded-r-lg ${
+                                        timeframeFilter === 'long-term'
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-gray-100 text-gray-700'
+                                    }`}
+                                >
+                                    Long-term (12+ months)
+                                </button>
+                            </div>
+                            
+                            {filteredTimeline.length === 0 ? (
+                                <div className="text-center p-8">
+                                    <i className="fas fa-calendar-alt text-gray-400 text-4xl mb-3"></i>
+                                    <p className="text-gray-600">No timeline items for selected filter.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {filteredTimeline.map((item, index) => (
+                                        <div key={index} className="border-l-4 border-green-500 pl-4 py-3">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h4 className="font-bold">{item.action}</h4>
+                                                    <div className="flex items-center mt-1">
+                                                        <span className={`priority-badge priority-${item.priority} mr-3`}>
+                                                            {item.priority} priority
+                                                        </span>
+                                                        <span className="text-sm text-gray-600">
+                                                            <i className="far fa-calendar mr-1"></i>
+                                                            {item.timeframe}
+                                                        </span>
+                                                        <span className="text-sm text-gray-600 ml-3">
+                                                            <i className="fas fa-sun mr-1"></i>
+                                                            Best in {item.season}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {item.details && (
+                                                <p className="mt-2 text-gray-700">{item.details}</p>
+                                            )}
+                                            {item.responsible && (
+                                                <div className="mt-2 text-sm text-gray-600">
+                                                    <i className="fas fa-user mr-1"></i>
+                                                    Responsible: {item.responsible}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Right Column - Budget & Summary */}
+                    <div>
+                        <div className="card mb-6">
+                            <h3 className="text-lg font-bold mb-4">Budget Summary</h3>
+                            
+                            <div className="mb-6">
+                                <div className="text-center p-4 bg-green-50 rounded-lg">
+                                    <div className="text-3xl font-bold text-green-700">
+                                        ${totalCost.toLocaleString()}
+                                    </div>
+                                    <div className="text-gray-600">Total Estimated Cost</div>
+                                </div>
+                            </div>
+                            
+                            {budget?.items?.length > 0 ? (
+                                <div>
+                                    <h4 className="font-medium mb-3">Cost Breakdown</h4>
+                                    <div className="space-y-3">
+                                        {budget.items.map((item, index) => (
+                                            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <div>
+                                                    <div className="font-medium">{item.item}</div>
+                                                    <div className="text-sm text-gray-600">{item.timeframe}</div>
+                                                </div>
+                                                <div className="font-bold">
+                                                    ${item.cost.toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center p-4">
+                                    Complete recommendations to generate budget estimates.
+                                </p>
+                            )}
+                        </div>
+                        
+                        <div className="card">
+                            <h3 className="text-lg font-bold mb-4">Implementation Checklist</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Property assessment completed</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Map zones identified</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Recommendations reviewed</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Budget prepared</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Funding sources identified</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <input type="checkbox" className="mr-3" />
+                                    <span>Implementation timeline created</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Resources Component
+    function Resources({ state, contacts, addContact, fundingPrograms }) {
+        const [newContact, setNewContact] = useState({
+            name: '',
+            organization: '',
+            role: '',
+            phone: '',
+            email: '',
+            notes: ''
+        });
+        
+        const localFunding = fundingPrograms[state] || [];
+        
+        const handleContactSubmit = (e) => {
+            e.preventDefault();
+            if (newContact.name && newContact.organization) {
+                addContact(newContact);
+                setNewContact({
+                    name: '',
+                    organization: '',
+                    role: '',
+                    phone: '',
+                    email: '',
+                    notes: ''
+                });
+            }
+        };
+        
+        const resourceCategories = [
+            {
+                title: 'Technical Guidance',
+                resources: [
+                    { name: 'NRM Technical Manuals', url: 'https://www.nrm.gov.au/resources' },
+                    { name: 'Soil Health Guide', url: 'https://www.soilhealth.com' },
+                    { name: 'Native Plant Database', url: 'https://www.anbg.gov.au' }
+                ]
+            },
+            {
+                title: 'Regulatory Information',
+                resources: [
+                    { name: 'Environmental Regulations', url: 'https://www.legislation.gov.au' },
+                    { name: 'Clearing Permits', url: 'https://www.environment.gov.au' },
+                    { name: 'Water Licensing', url: 'https://www.water.gov.au' }
+                ]
+            },
+            {
+                title: 'Community Support',
+                resources: [
+                    { name: 'Landcare Australia', url: 'https://landcareaustralia.org.au' },
+                    { name: 'Local Catchment Groups', url: 'https://www.catchmentgroups.org.au' },
+                    { name: 'Farmers for Climate Action', url: 'https://farmersforclimateaction.org.au' }
+                ]
+            }
+        ];
+        
+        return (
+            <div className="max-w-6xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Resources & Contacts</h2>
+                        <p className="text-gray-600">Funding opportunities, technical resources, and local contacts</p>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column - Funding & Resources */}
+                    <div>
+                        <div className="card mb-6">
+                            <h3 className="text-lg font-bold mb-4">Funding Opportunities ({state})</h3>
+                            
+                            {localFunding.length === 0 ? (
+                                <p className="text-gray-500 p-4 text-center">
+                                    Select your state in Property Profile to see funding programs.
+                                </p>
+                            ) : (
+                                <div className="space-y-4">
+                                    {localFunding.map((program, index) => (
+                                        <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
+                                            <div className="font-bold mb-1">{program.name}</div>
+                                            <div className="text-sm text-gray-600 mb-2">{program.provider}</div>
+                                            <div className="flex justify-between text-sm">
+                                                <span>
+                                                    <i className="fas fa-dollar-sign mr-1"></i>
+                                                    {program.amount}
+                                                </span>
+                                                <span>
+                                                    <i className="far fa-clock mr-1"></i>
+                                                    Deadline: {program.deadline}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="card">
+                            <h3 className="text-lg font-bold mb-4">Online Resources</h3>
+                            
+                            <div className="space-y-6">
+                                {resourceCategories.map((category, index) => (
+                                    <div key={index}>
+                                        <h4 className="font-bold mb-3">{category.title}</h4>
+                                        <div className="space-y-2">
+                                            {category.resources.map((resource, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={resource.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center p-3 hover:bg-gray-50 rounded-lg"
+                                                >
+                                                    <i className="fas fa-external-link-alt text-gray-400 mr-3"></i>
+                                                    <span>{resource.name}</span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Right Column - Contacts */}
+                    <div>
+                        <div className="card mb-6">
+                            <h3 className="text-lg font-bold mb-4">Key Contacts</h3>
+                            
+                            <form onSubmit={handleContactSubmit} className="space-y-4 mb-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="form-label">Name *</label>
+                                        <input
+                                            type="text"
+                                            value={newContact.name}
+                                            onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                                            className="form-input"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Organization *</label>
+                                        <input
+                                            type="text"
+                                            value={newContact.organization}
+                                            onChange={(e) => setNewContact({...newContact, organization: e.target.value})}
+                                            className="form-input"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="form-label">Role</label>
+                                        <input
+                                            type="text"
+                                            value={newContact.role}
+                                            onChange={(e) => setNewContact({...newContact, role: e.target.value})}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Phone</label>
+                                        <input
+                                            type="tel"
+                                            value={newContact.phone}
+                                            onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        value={newContact.email}
+                                        onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                                        className="form-input"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="form-label">Notes</label>
+                                    <textarea
+                                        value={newContact.notes}
+                                        onChange={(e) => setNewContact({...newContact, notes: e.target.value})}
+                                        className="form-input"
+                                        rows="2"
+                                    />
+                                </div>
+                                
+                                <button type="submit" className="btn-primary">
+                                    <i className="fas fa-plus mr-2"></i>
+                                    Add Contact
+                                </button>
+                            </form>
+                            
+                            {contacts.length === 0 ? (
+                                <p className="text-gray-500 p-4 text-center">
+                                    No contacts added yet.
+                                </p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {contacts.map(contact => (
+                                        <div key={contact.id} className="p-4 border rounded-lg">
+                                            <div className="font-bold">{contact.name}</div>
+                                            <div className="text-sm text-gray-600">{contact.organization}</div>
+                                            {contact.role && <div className="text-sm">{contact.role}</div>}
+                                            <div className="mt-2 text-sm">
+                                                {contact.phone && (
+                                                    <div><i className="fas fa-phone mr-2"></i>{contact.phone}</div>
+                                                )}
+                                                {contact.email && (
+                                                    <div><i className="fas fa-envelope mr-2"></i>{contact.email}</div>
+                                                )}
+                                            </div>
+                                            {contact.notes && (
+                                                <div className="mt-2 text-sm text-gray-600">{contact.notes}</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="card">
+                            <h3 className="text-lg font-bold mb-4">Next Steps</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                                    <i className="fas fa-file-contract text-blue-500 mr-3"></i>
+                                    <div>
+                                        <div className="font-medium">Review your action plan</div>
+                                        <div className="text-sm text-gray-600">Make any final adjustments</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center p-3 bg-green-50 rounded-lg">
+                                    <i className="fas fa-download text-green-500 mr-3"></i>
+                                    <div>
+                                        <div className="font-medium">Export your plan</div>
+                                        <div className="text-sm text-gray-600">Download PDF and share with stakeholders</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center p-3 bg-purple-50 rounded-lg">
+                                    <i className="fas fa-calendar-check text-purple-500 mr-3"></i>
+                                    <div>
+                                        <div className="font-medium">Schedule implementation</div>
+                                        <div className="text-sm text-gray-600">Start with high-priority actions</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Export Panel Component
+    function ExportPanel({ formData, clearLocalStorage }) {
+        const [exportOptions, setExportOptions] = useState({
+            includeMap: true,
+            includePhotos: true,
+            includeBudget: true,
+            includeContacts: true,
+            highQuality: false
+        });
+        
+        const [isGenerating, setIsGenerating] = useState(false);
+        
+        const generatePDF = async () => {
+            setIsGenerating(true);
+            // PDF generation implementation would go here
+            setTimeout(() => {
+                alert('PDF generation would start here. In a full implementation, this would create a comprehensive PDF report.');
+                setIsGenerating(false);
+            }, 1500);
+        };
+        
+        const exportToCSV = (data, filename) => {
+            if (!data || data.length === 0) {
+                alert("No data to export");
+                return;
+            }
+            
+            const csv = Papa.unparse(data);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            saveAs(blob, filename);
+        };
+        
+        const exportRecommendations = () => {
+            exportToCSV(formData.recommendations, 'LEAP_Recommendations.csv');
+        };
+        
+        const exportTimeline = () => {
+            exportToCSV(formData.timeline, 'LEAP_Timeline.csv');
+        };
+        
+        const sharePlan = () => {
+            const planData = {
+                property: formData.property.name,
+                summary: `${formData.recommendations.length} recommendations, ${formData.timeline.length} timeline items`,
+                date: new Date().toISOString()
+            };
+            
+            // In a real implementation, this would generate a shareable link
+            alert('Share functionality would generate a shareable link to your plan.');
+        };
+        
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Export Your Plan</h2>
+                        <p className="text-gray-600">Download, share, or print your environmental action plan</p>
+                    </div>
+                </div>
+                
+                <div className="card">
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4">Plan Summary</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                <div className="text-2xl font-bold text-green-600">{formData.recommendations.length}</div>
+                                <div className="text-sm text-gray-600">Recommendations</div>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                <div className="text-2xl font-bold text-blue-600">{formData.timeline.length}</div>
+                                <div className="text-sm text-gray-600">Timeline Items</div>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                <div className="text-2xl font-bold text-purple-600">{formData.mapZones.length}</div>
+                                <div className="text-sm text-gray-600">Mapped Zones</div>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                <div className="text-2xl font-bold text-orange-600">
+                                    ${(formData.budget?.estimatedCost || 0).toLocaleString()}
+                                </div>
+                                <div className="text-sm text-gray-600">Estimated Budget</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4">Export Options</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="include-map"
+                                    checked={exportOptions.includeMap}
+                                    onChange={() => setExportOptions(prev => ({...prev, includeMap: !prev.includeMap}))}
+                                    className="h-4 w-4 text-green-600"
+                                />
+                                <label htmlFor="include-map" className="ml-2">
+                                    Include property map
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="include-photos"
+                                    checked={exportOptions.includePhotos}
+                                    onChange={() => setExportOptions(prev => ({...prev, includePhotos: !prev.includePhotos}))}
+                                    className="h-4 w-4 text-green-600"
+                                />
+                                <label htmlFor="include-photos" className="ml-2">
+                                    Include site photos
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="include-budget"
+                                    checked={exportOptions.includeBudget}
+                                    onChange={() => setExportOptions(prev => ({...prev, includeBudget: !prev.includeBudget}))}
+                                    className="h-4 w-4 text-green-600"
+                                />
+                                <label htmlFor="include-budget" className="ml-2">
+                                    Include detailed budget
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="high-quality"
+                                    checked={exportOptions.highQuality}
+                                    onChange={() => setExportOptions(prev => ({...prev, highQuality: !prev.highQuality}))}
+                                    className="h-4 w-4 text-green-600"
+                                />
+                                <label htmlFor="high-quality" className="ml-2">
+                                    High quality (larger file size)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold mb-4">Export Formats</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button
+                                onClick={generatePDF}
+                                disabled={isGenerating}
+                                className="p-6 bg-green-600 hover:bg-green-700 text-white rounded-lg text-center flex flex-col items-center justify-center disabled:opacity-50"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+                                        Generating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-file-pdf text-3xl mb-2"></i>
+                                        <div className="font-bold">PDF Report</div>
+                                        <div className="text-sm opacity-90">Complete plan with all details</div>
+                                    </>
+                                )}
+                            </button>
+                            
+                            <button
+                                onClick={exportRecommendations}
+                                className="p-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center flex flex-col items-center justify-center"
+                            >
+                                <i className="fas fa-file-csv text-3xl mb-2"></i>
+                                <div className="font-bold">CSV Export</div>
+                                <div className="text-sm opacity-90">Spreadsheet data</div>
+                            </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <button
+                                onClick={exportRecommendations}
+                                className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center"
+                            >
+                                <i className="fas fa-lightbulb text-green-600 mb-1"></i>
+                                <div className="text-sm">Recommendations</div>
+                            </button>
+                            <button
+                                onClick={exportTimeline}
+                                className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center"
+                            >
+                                <i className="fas fa-calendar-alt text-blue-600 mb-1"></i>
+                                <div className="text-sm">Timeline</div>
+                            </button>
+                            <button
+                                onClick={sharePlan}
+                                className="p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-center"
+                            >
+                                <i className="fas fa-share-alt text-purple-600 mb-1"></i>
+                                <div className="text-sm">Share Plan</div>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="border-t pt-6">
+                        <h3 className="text-lg font-bold mb-4">Plan Management</h3>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <button
+                                onClick={() => {
+                                    if (confirm('Save a copy of this plan for future reference?')) {
+                                        // Save implementation
+                                        alert('Plan saved for future reference.');
+                                    }
+                                }}
+                                className="flex-1 p-4 border border-green-600 text-green-600 rounded-lg hover:bg-green-50"
+                            >
+                                <i className="fas fa-save mr-2"></i>
+                                Save Plan Copy
+                            </button>
+                            <button
+                                onClick={clearLocalStorage}
+                                className="flex-1 p-4 border border-red-600 text-red-600 rounded-lg hover:bg-red-50"
+                            >
+                                <i className="fas fa-trash-alt mr-2"></i>
+                                Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Render the app
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
