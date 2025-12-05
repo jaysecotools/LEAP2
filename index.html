@@ -3575,11 +3575,11 @@
     }
 
     // Initialize the app
-    document.addEventListener('DOMContentLoaded', function() {
-        const root = document.getElementById('root');
-        if (root) {
-            ReactDOM.render(<App />, root);
-        }
+// Replace the entire DOMContentLoaded section at the end with this:
+const root = document.getElementById('root');
+if (root) {
+    ReactDOM.render(<App />, root);
+}
     });
 </script>
 </body>
