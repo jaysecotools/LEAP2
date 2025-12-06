@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LEAP Pro - User Guide</title>
-    <link rel="stylesheet" href="https://cdn.tailwindcss.com">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -304,48 +311,65 @@
         }
     </style>
 </head>
-<body>
-    <!-- Header -->
-    <header class="header-gradient text-white">
-        <div class="container mx-auto px-4 py-8 md:py-12">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
-                <div class="flex items-center">
-                    <div class="bg-white p-3 rounded-lg mr-4 transform transition-transform hover:scale-105">
-                        <i class="fas fa-leaf text-green-600 text-2xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="heading-1 mb-2">LEAP Pro User Guide</h1>
-                        <p class="text-green-100 body-regular">Landholder Environmental Action Planner</p>
-                    </div>
+
+<body class="bg-grey-50 text-gray-900 antialiased">
+
+    <!-- ========================================================= -->
+    <!--                      UPGRADED HEADER                       -->
+    <!-- ========================================================= -->
+    <header class="header-gradient text-white relative overflow-hidden shadow-lg">
+        <div class="container mx-auto px-4 py-10">
+
+            <!-- Title + Navigation -->
+            <div class="flex flex-col gap-4">
+
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tight drop-shadow-lg">
+                        LEAP Pro User Guide
+                    </h1>
+                    <p class="text-lg text-white/90 mt-1">
+                        Landholder Environmental Action Planner – Reference Manual
+                    </p>
                 </div>
-                <a href="index.html" class="bg-white text-green-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-all duration-300 inline-flex items-center self-start md:self-center transform hover:-translate-x-1">
-                    <i class="fas fa-arrow-left mr-2"></i>
+
+                <!-- Back Link -->
+                <a href="index.html"
+                    class="inline-flex items-center gap-2 text-white/95 hover:text-white underline decoration-white/60 underline-offset-4 text-lg font-medium transition">
+                    <i class="fas fa-arrow-left text-base"></i>
                     Back to Application
                 </a>
             </div>
-            
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white bg-opacity-20 p-4 rounded-lg backdrop-blur-sm hover:bg-opacity-30 transition-all duration-300">
-                    <div class="text-2xl font-bold mb-1">8</div>
-                    <div class="text-sm">Step Process</div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-10">
+
+                <div class="text-center">
+                    <div class="text-3xl font-semibold drop-shadow-md">8</div>
+                    <div class="text-sm opacity-90">Step Workflow</div>
                 </div>
-                <div class="bg-white bg-opacity-20 p-4 rounded-lg backdrop-blur-sm hover:bg-opacity-30 transition-all duration-300">
-                    <div class="text-2xl font-bold mb-1">4</div>
-                    <div class="text-sm">Key Features</div>
+
+                <div class="text-center">
+                    <div class="text-3xl font-semibold drop-shadow-md">4</div>
+                    <div class="text-sm opacity-90">Core Modules</div>
                 </div>
-                <div class="bg-white bg-opacity-20 p-4 rounded-lg backdrop-blur-sm hover:bg-opacity-30 transition-all duration-300">
-                    <div class="text-2xl font-bold mb-1">10+</div>
-                    <div class="text-sm">Environmental Issues</div>
+
+                <div class="text-center">
+                    <div class="text-3xl font-semibold drop-shadow-md">10+</div>
+                    <div class="text-sm opacity-90">Environmental Issues</div>
                 </div>
-                <div class="bg-white bg-opacity-20 p-4 rounded-lg backdrop-blur-sm hover:bg-opacity-30 transition-all duration-300">
-                    <div class="text-2xl font-bold mb-1">PDF</div>
-                    <div class="text-sm">Export Options</div>
+
+                <div class="text-center">
+                    <div class="text-3xl font-semibold drop-shadow-md">PDF</div>
+                    <div class="text-sm opacity-90">Export Options</div>
                 </div>
+
             </div>
         </div>
     </header>
-    
+
+    <!-- ========================================================= -->
+    <!--                       MAIN CONTENT                         -->
+    <!-- ========================================================= -->
     <div class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Sidebar Navigation -->
@@ -400,7 +424,9 @@
             
             <!-- Main Content -->
             <div class="lg:col-span-3">
-                <!-- Getting Started -->
+                <!-- ===================================================== -->
+                <!--   SECTION 1: Intro / Overview                         -->
+                <!-- ===================================================== -->
                 <section id="getting-started" class="section-card">
                     <h2 class="heading-2 mb-8">Getting Started with LEAP Pro</h2>
                     
@@ -443,7 +469,9 @@
                     </div>
                 </section>
                 
-                <!-- Step-by-Step Guide -->
+                <!-- ===================================================== -->
+                <!--    SECTION 2: Step-by-Step Guide                      -->
+                <!-- ===================================================== -->
                 <section id="step-by-step" class="section-card">
                     <h2 class="heading-2 mb-8">Step-by-Step Guide</h2>
                     
@@ -584,7 +612,9 @@
                     </div>
                 </section>
                 
-                <!-- Key Features -->
+                <!-- ===================================================== -->
+                <!--        SECTION 3: Key Features                        -->
+                <!-- ===================================================== -->
                 <section id="features" class="section-card">
                     <h2 class="heading-2 mb-8">Key Features</h2>
                     
@@ -639,7 +669,9 @@
                     </div>
                 </section>
                 
-                <!-- Mapping Tools -->
+                <!-- ===================================================== -->
+                <!--        SECTION 4: Mapping Tools                       -->
+                <!-- ===================================================== -->
                 <section id="mapping" class="section-card">
                     <h2 class="heading-2 mb-8">Mapping Tools Guide</h2>
                     
@@ -684,7 +716,9 @@
                     </ol>
                 </section>
                 
-                <!-- Troubleshooting -->
+                <!-- ===================================================== -->
+                <!--        SECTION 5: Troubleshooting                     -->
+                <!-- ===================================================== -->
                 <section id="troubleshooting" class="section-card">
                     <h2 class="heading-2 mb-8">Troubleshooting</h2>
                     
@@ -739,7 +773,9 @@
                     </div>
                 </section>
                 
-                <!-- FAQ -->
+                <!-- ===================================================== -->
+                <!--        SECTION 6: FAQ                                -->
+                <!-- ===================================================== -->
                 <section id="faq" class="section-card">
                     <h2 class="heading-2 mb-8">Frequently Asked Questions</h2>
                     
@@ -781,7 +817,9 @@
                     </div>
                 </section>
                 
-                <!-- Contact Support -->
+                <!-- ===================================================== -->
+                <!--        SECTION 7: Contact Support                     -->
+                <!-- ===================================================== -->
                 <section id="contact" class="section-card">
                     <h2 class="heading-2 mb-8">Contact Support</h2>
                     
